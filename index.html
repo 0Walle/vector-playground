@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Playground</title>
+    <link rel="stylesheet" href="mathquill/mathquill.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="mathquill/mathquill-basic.js"></script>
+    <script src="defs.js"></script>
+    <script src="parser.js"></script>
+    <style>
+        body {
+            margin: 0px;
+            background-color: #002b36;
+        }
+
+        #view {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #defs {
+            width: 450px;
+            /* box-shadow: 0 -4px 6px #93a1a188; */
+            border-right: 1px solid #839496;
+            display: flex;
+            flex-direction: column;
+            /* background: #073642; */
+        }
+
+        #defs div {
+            /* border-radius: 5px; */
+            /* background: #073642; */
+            /* box-shadow: 0 0px 6px #93a1a1; */
+            /* height: 5em; */
+            color: #fdf6e3;
+            font-size: 115%;
+            border-bottom: 1px solid #657b83;
+            /* margin: 5px; */
+            padding: 15px;
+        }
+
+        #box-container {
+            width: 100%;
+        }
+
+        #objs {
+            position: absolute;
+            z-index: 10;
+        }
+
+        #answer {
+            border: none;
+            box-shadow: none;
+            width: 100%;
+        }
+
+        span .mq-cursor {
+            border-left: 1px solid #fdf6e3 !important;
+        }
+
+
+        /* #grid {
+            width: 100%;
+            object-fit: contain;
+            height: 100%;
+        } */
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <div id="view">
+        <div id="defs">
+            <div><span id="answer">x=</span></div>
+        </div>
+        <div id="box-container">
+            <canvas id="grid"></canvas>
+            <canvas id="objs"></canvas>
+        </div>
+    </div>
+    <script type="text/javascript">
+        const MQ = MathQuill.getInterface(2);
+
+        let Graph = {
+            pan_x: 0,
+            pan_y: 0,
+            objects: [],
+            selected: null,
+        }
+
+        let Canvas = {
+            element: document.getElementById("grid"),
+            ctx: null,
+            obj_layer: document.getElementById("objs"),
+            obj_ctx: null,
+
+            init() {
+                const rect = document.getElementById("box-container").getBoundingClientRect();
+                this.element.width = rect.width;
+                this.element.height = rect.height - 5;
+
+                Graph.pan_x = rect.width/2;
+                Graph.pan_y = rect.height/2;
+
+                this.obj_layer.style.left = rect.x + 'px';
+                this.obj_layer.style.top = rect.top;
+                this.obj_layer.width = rect.width;
+                this.obj_layer.height = rect.height - 5;
+
+                this.ctx = this.element.getContext('2d');
+                this.obj_ctx = this.obj_layer.getContext('2d')
+            },
+
+            update() {
+                const size = {
+                    x: this.element.clientWidth,
+                    y: this.element.clientHeight,
+                }
+
+                this.ctx.clearRect(0, 0, size.x, size.y);
+                this.obj_ctx.clearRect(0, 0, size.x, size.y);
+
+                this.ctx.lineWidth = 0.5;
+                this.ctx.strokeStyle = "#839496";
+
+                const number_x_start = Math.trunc(-Graph.pan_x / step);
+                const number_y_start = Math.trunc(-Graph.pan_y / step);
+
+                for (let i = 0; i <= Math.trunc(size.x / step) + 1; i++) {
+                    if (i + number_x_start != 0) {
+                        this.ctx.fillText(
+                            String(i + number_x_start),
+                            (Graph.pan_x % step) + i * step + 4,
+                            Math.min(Math.max(Graph.pan_y + 16, 16), size.y));
+
+                        this.ctx.beginPath();
+                        this.ctx.moveTo((Graph.pan_x % step) + i * step, 0);
+                        this.ctx.lineTo((Graph.pan_x % step) + i * step, size.y);
+                        this.ctx.stroke();
+                    }
+                }
+
+                for (let i = 0; i <= Math.trunc(size.y / step) + 1; i++) {
+                    if (i + number_y_start != 0) {
+                        this.ctx.fillText(
+                            String(i + number_y_start),
+                            Math.min(Math.max(Graph.pan_x + 8, 8), size.x - 16),
+                            (Graph.pan_y % step) + i * step - 4);
+
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, (Graph.pan_y % step) + i * step);
+                        this.ctx.lineTo(size.x, (Graph.pan_y % step) + i * step);
+                        this.ctx.stroke();
+                    }
+                }
+
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = "#fdf6e3";
+                this.ctx.fillStyle = "#fdf6e3";
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(Graph.pan_x, 0);
+                this.ctx.lineTo(Graph.pan_x, size.y);
+                this.ctx.stroke();
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, Graph.pan_y);
+                this.ctx.lineTo(size.x, Graph.pan_y);
+                this.ctx.stroke();
+
+
+                this.obj_ctx.lineWidth = 4;
+
+                for (const obj of Graph.objects) {
+                    if (obj.update) obj.update(obj);
+
+                    this.obj_ctx.strokeStyle = colors[obj.color];
+                    this.obj_ctx.fillStyle = colors[obj.color];
+
+                    const selected = obj == Graph.selected;
+
+                    switch (obj.kind) {
+                        case 'vector':
+                            this.obj_ctx.beginPath();
+                            draw_arrow(this.obj_ctx,
+                                obj.x1 * step + Graph.pan_x,
+                                obj.y1 * step + Graph.pan_y,
+                                obj.x2 * step,
+                                obj.y2 * step
+                            );
+                            break;
+                        case 'point':
+                            this.obj_ctx.beginPath();
+                            this.obj_ctx.arc(obj.x1 * step + Graph.pan_x, obj.y1 * step + Graph.pan_y, 4, 0, 2 * Math.PI);
+                            this.obj_ctx.fill();
+                            break;
+                    }
+                }
+            },
+        }
+
+        window.addEventListener("mousemove", e => {
+            e.preventDefault();
+            if (e.buttons & 2) {
+                Graph.pan_x += e.movementX;
+                Graph.pan_y += e.movementY;
+
+                Canvas.update();
+            } else if (e.buttons & 1) {
+                if (Graph.selected) {
+                    let [sx, sy] = snap2((e.offsetX - Graph.pan_x)/step, (e.offsetY - Graph.pan_y)/step)
+                    Graph.selected.x1 = sx;
+                    Graph.selected.y1 = sy;
+                }
+
+                Canvas.update();
+            }
+        })
+
+        window.addEventListener("mousedown", e => {
+            if (e.buttons & 1) {
+                e.preventDefault();
+                
+                for (const obj of Graph.objects) {
+                    switch (obj.kind) {
+                        case 'vector':
+                            // this.obj_ctx.beginPath();
+                            // draw_arrow(this.obj_ctx,
+                            //     obj.x1 * step + Graph.pan_x,
+                            //     obj.y1 * step + Graph.pan_y,
+                            //     obj.x2 * step + Graph.pan_x,
+                            //     obj.y2 * step + Graph.pan_y
+                            // );
+                            break;
+                        case 'point':
+                            const [x, y] = [obj.x1 * step + Graph.pan_x, obj.y1 * step + Graph.pan_y]
+                            const d = Math.hypot(x - e.offsetX, y - e.offsetY);
+                            if (d <= 4) {
+                                Graph.selected = obj
+                            }
+                            break;
+                    }
+
+                }
+
+                Canvas.update();
+            }
+        })
+
+        window.addEventListener("mouseup", e => {
+            Graph.selected = null;
+        })
+
+        Canvas.init();
+        Canvas.update();
+
+        let p = Point(2, 1);
+        Graph.objects.push(p);
+
+        let v = Vector(0, 0);
+        Graph.objects.push(v);
+
+        let v1 = Vector(1, 1);
+        Graph.objects.push(v1);
+        v1.color = 1;
+
+        let v2 = Vector(0, 0);
+        Graph.objects.push(v2);
+
+        v.update = (obj) => {
+            obj.x2 = v1.x2 + v2.x2;
+            obj.y2 = v1.y2 + v2.y2;
+
+            // v1.x1 = p.x1;
+            // v1.y1 = p.y1;
+        }
+        v.update(v);
+
+        v2.update = (obj) => {
+            obj.x2 = p.x1;
+            obj.y2 = p.y1;
+        }
+        v2.update(v2);
+        
+        Canvas.update();
+
+        let answerSpan = document.getElementById('answer');
+        let answerMathField = MQ.MathField(answerSpan, {
+            handlers: {
+                edit: function() {
+                    let format = answerMathField.text();
+                    if (!format) return;
+                    let ast
+                    try {
+                        ast = parse_expression({source: format});
+                    } catch(e) {
+                        return;
+                    }
+                    let result = execute_ast(ast, {
+                        'i': new Vec(1, 0),
+                        'j': new Vec(0, 1),
+                    });
+
+                    console.log(result);
+
+                    if (result instanceof Vec) {
+                        v1.x2 = result.x;
+                        v1.y2 = result.y;
+
+                        Canvas.update();
+                    }
+
+                    // var enteredMath = answerMathField.latex(); // Get entered math in LaTeX format
+                    // checkAnswer(enteredMath);
+                }
+            },
+            autoCommands: 'pi theta sqrt',
+        });
+    </script>
+</body>
+</html>
