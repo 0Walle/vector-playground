@@ -23,24 +23,19 @@
         }
 
         #defs {
-            /* width: 450px; */
             min-width: 300px;
-            /* box-shadow: 0 -4px 6px #93a1a188; */
             border-right: 1px solid #839496;
             display: flex;
             flex-direction: column;
-            /* background: #073642; */
+            max-height: 100vh;
+            overflow-y: scroll;
+            scrollbar-width: none;
         }
 
         #defs div {
-            /* border-radius: 5px; */
-            /* background: #073642; */
-            /* box-shadow: 0 0px 6px #93a1a1; */
-            /* height: 5em; */
             color: #fdf6e3;
             font-size: 115%;
             border-bottom: 1px solid #657b83;
-            /* margin: 5px; */
             padding: 15px;
         }
 
@@ -62,20 +57,11 @@
         span .mq-cursor {
             border-left: 1px solid #fdf6e3 !important;
         }
-
-
-        /* #grid {
-            width: 100%;
-            object-fit: contain;
-            height: 100%;
-        } */
     </style>
 </head>
 <body oncontextmenu="return false;">
     <div id="view">
         <div id="defs">
-            <!-- <div><span id="answer1" class='math-field'></span></div> -->
-            <!-- <div><span id="answer2" class='math-field'></span></div> -->
             <div onclick="new_object()" id="new-ref"><span style="font-size: 115%;">&nbsp;</span></div>
         </div>
         <div id="box-container">
@@ -176,36 +162,6 @@
 
 
                 this.obj_ctx.lineWidth = 4;
-
-                /*for (const obj of Graph.objects) {
-                    if (obj.update) obj.update(obj);
-
-                    // for (v in env) {
-                    //     env[v].val = undefined;
-                    // }
-
-                    this.obj_ctx.strokeStyle = colors[obj.color];
-                    this.obj_ctx.fillStyle = colors[obj.color];
-
-                    const selected = obj == Graph.selected;
-
-                    switch (obj.kind) {
-                        case 'vector':
-                            this.obj_ctx.beginPath();
-                            draw_arrow(this.obj_ctx,
-                                obj.x1 * step + Graph.pan_x,
-                                obj.y1 * step + Graph.pan_y,
-                                obj.x2 * step,
-                                obj.y2 * step
-                            );
-                            break;
-                        case 'point':
-                            this.obj_ctx.beginPath();
-                            this.obj_ctx.arc(obj.x1 * step + Graph.pan_x, obj.y1 * step + Graph.pan_y, 4, 0, 2 * Math.PI);
-                            this.obj_ctx.fill();
-                            break;
-                    }
-                }*/
 
                 let environment = {};
 
@@ -322,12 +278,6 @@
         let p = Point(2, 1);
         Graph.objects.push(p);
 
-        let env = {
-            // 'i': () => new Vec(1, 0),
-            // 'j': () => new Vec(0, 1),
-            // 'P': () => new Vec(p.x1, p.y1),
-        }
-
         function new_object(color = 0){
             const new_div = document.getElementById('new-ref');
             const defs_div = document.getElementById('defs');
@@ -341,8 +291,6 @@
             let v = Vector(0, 0);
             Graph.objects.push(v);
             v.color = color;
-
-            // env[name] = () => new Vec(v.x2, v.y2)
             
             let math_field = MQ.MathField(span, {
                 handlers: {
@@ -359,33 +307,10 @@
                         if (ast.kind == 'op' && ast.op == '=') {
                             math_field.ast = ast.rhs;
                             math_field.obj_name = ast.lhs.val;
-                            // env[ast.lhs.val] = {
-                            //     func: ast.rhs,
-                            //     val: undefined,
-                            //     obj: v,
-                            // }
-                            //() => new Vec(v.x2, v.y2)
-                            // ast = 
                         } else {
                             math_field.ast = ast;
                             math_field.obj_name = '_' + String(Math.random());
-                            // env['_'+String(Math.random())] = {
-                            //     func: ast.rhs,
-                            //     val: undefined,
-                            //     obj: v,
-                            // }
-                            // ast = ast.rhs
                         }
-
-                        // let result = () => execute_ast(ast, env);
-
-                        // v.update = () => {
-                        //     let r = result();
-                        //     if (r instanceof Vec) {
-                        //         v.x2 = r.x;
-                        //         v.y2 = r.y;
-                        //     }
-                        // }
 
                         Canvas.update();
                     }
@@ -401,37 +326,7 @@
             Graph.fields.push(math_field);
         }
 
-        // new_object();
-        // new_object(1);
-
         Canvas.update();
-
-        // let v = Vector(0, 0);
-        // Graph.objects.push(v);
-
-        // let v1 = Vector(1, 1);
-        // Graph.objects.push(v1);
-        // v1.color = 1;
-
-        // let v2 = Vector(0, 0);
-        // Graph.objects.push(v2);
-
-        // v.update = (obj) => {
-        //     obj.x2 = v1.x2 + v2.x2;
-        //     obj.y2 = v1.y2 + v2.y2;
-
-        //     // v1.x1 = p.x1;
-        //     // v1.y1 = p.y1;
-        // }
-        // v.update(v);
-
-        // v2.update = (obj) => {
-        //     obj.x2 = p.x1;
-        //     obj.y2 = p.y1;
-        // }
-        // v2.update(v2);
-        
-        // Canvas.update();
     </script>
 </body>
 </html>
