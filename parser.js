@@ -6,6 +6,7 @@ function next_token(source) {
     let match;
     source.source = source.source.trim();
 
+    if (/,/.exec(source.source[0])) return source.source.slice(1);
     if (/[()]/.exec(source.source[0])) return source.source.slice(1);
     if (/\|/.exec(source.source[0])) return source.source.slice(1);
 
@@ -22,6 +23,7 @@ function peek_token(source) {
     let match;
     let t = source.source.trim();
 
+    if (match = /,/.exec(t[0])) return {kind: 'comma'}
     if (match = /[()]/.exec(t[0])) return {kind: 'paren', val: match[0]}
     if (match = /\|/.exec(t[0])) return {kind: 'abs'}
     
@@ -67,10 +69,23 @@ function parse_binary(source, lhs, min_prec) {
 
 function parse_primary(source) {
     let tk = peek_token(source);
+
+    if (tk.kind == 'op' && tk.val == '-') {
+        source.source = next_token(source);
+        let lhs = parse_primary(source);
+        return {kind: 'op', op: 'neg', lhs: lhs}
+    }
+
     if (tk.kind == 'paren' && tk.val == '(') {
         source.source = next_token(source);
         let lhs = parse_binary(source, parse_primary(source), 0);
         tk = peek_token(source);
+        if (tk.kind == 'comma') {
+            source.source = next_token(source);
+            let rhs = parse_binary(source, parse_primary(source), 0);
+            lhs = {kind: 'op', op: 'vector', lhs: lhs, rhs: rhs}
+            tk = peek_token(source);
+        }
         if (tk.kind == 'paren' && tk.val == ')') {
             source.source = next_token(source);
             return lhs
@@ -128,6 +143,10 @@ class Num {
     abs() {
         return new Num(Math.abs(this.n))
     }
+
+    neg() {
+        return new Num(-this.n)
+    }
 }
 
 class Vec {
@@ -161,6 +180,26 @@ class Vec {
     abs() {
         return new Num(Math.hypot(this.x, this.y))
     }
+
+    neg() {
+        return new Vec(-this.x, -this.y);
+    }
+}
+
+function get_val(env, id) {
+    if (!(id in env)) return undefined;
+    if (env[id].val) return env[id].val;
+
+    let result;
+    if (typeof env[id].func == 'function') {
+        result = env[id].func();
+    } else {
+        result = execute_ast(env[id].func, env);
+    }
+
+    env[id].val = result;
+    return result;
+
 }
 
 function execute_ast(ast, env) {
@@ -192,13 +231,22 @@ function execute_ast(ast, env) {
                 lhs = execute_ast(ast.lhs, env);
                 if (lhs == undefined) return undefined;
                 return lhs.abs();
+            case 'neg':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                return lhs.neg();
+            case 'vector':
+                lhs = execute_ast(ast.lhs, env);
+                rhs = execute_ast(ast.rhs, env);
+                if (lhs == undefined || rhs == undefined) return undefined;
+                if (!(lhs instanceof Num && rhs instanceof Num)) return undefined;
+                return new Vec(lhs.n, rhs.n);
             case '=': break;
         }
     } else if (ast.kind == 'number') {
         return new Num(parseFloat(ast.val));
     } else if (ast.kind == 'id') {
-        if (env[ast.val]) return env[ast.val];
-        return undefined
+        return get_val(env,ast.val);
     }
 }
 

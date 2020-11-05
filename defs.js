@@ -3,6 +3,12 @@ const step = 80;
 const colors = [
     "#dc322f",
     "#859900",
+    '#b58900',
+    '#cb4b16',
+    '#d33682',
+    '#6c71c4',
+    '#268bd2',
+    '#2aa198',
 ]
 
 function Vector(x, y) {
@@ -26,7 +32,11 @@ function Point(x, y) {
 }
 
 function draw_arrow(ctx, x1, y1, _x2, _y2) {
-    if (_x2 == 0 && _y2 == 0) return;
+    if (_x2 == 0 && _y2 == 0) {
+        ctx.arc(x1, y1, 6, 0, 2 * Math.PI);
+        ctx.fill();    
+        return;
+    };
     const x2 = x1 + _x2;
     const y2 = y1 + _y2;
     const headlen = 15;
@@ -34,6 +44,7 @@ function draw_arrow(ctx, x1, y1, _x2, _y2) {
     const dy = y2 - y1;
     const angle = Math.atan2(dy, dx);
     const PI6 = Math.PI / 6;
+    ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2 - Math.cos(angle) * 10, y2 - Math.sin(angle) * 10);
     ctx.stroke();

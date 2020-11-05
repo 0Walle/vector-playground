@@ -2689,7 +2689,7 @@ var Symbol = P(MathCommand, function(_, super_) {
   };
 
   _.latex = function(){ return this.ctrlSeq; };
-  _.text = function(){ return this.textTemplate; };
+  _.text = function(){ return `${this.textTemplate}`; };
   _.placeCursor = noop;
   _.isEmpty = function(){ return true; };
 });
@@ -2856,14 +2856,22 @@ var Variable = P(Symbol, function(_, super_) {
   };
   _.text = function() {
     var text = this.ctrlSeq;
+    if (!this.isItalic) {
+      return `${text}`
+    }
     if (this[L] && !(this[L] instanceof Variable)
         && !(this[L] instanceof BinaryOperator)
-        && this[L].ctrlSeq !== "\\ ")
-      text = '*' + text;
+        && this[L].ctrlSeq !== "\\ " && this[L].ctrlSeq !== ','){
+          // text = '*' + text;
+          text = `*${text}`;
+        }
     if (this[R] && !(this[R] instanceof BinaryOperator)
-        && !(this[R] instanceof SupSub))
-      text += '*';
-    return text;
+        && !(this[R] instanceof SupSub) && this[R].ctrlSeq !== ','){
+          // text += '*';
+          text = `${text}*`;
+
+        }
+    return `${text}`;
   };
 });
 
@@ -3037,6 +3045,22 @@ var OperatorName = P(Symbol, function(_, super_) {
       Letter(fn.charAt(i)).adopt(block, block.ends[R], 0);
     }
     return Parser.succeed(block.children());
+  };
+  _.text = function() {
+    var text = this.ctrlSeq;
+    // if (this[L] && !(this[L] instanceof Variable)
+    //     && !(this[L] instanceof BinaryOperator)
+    //     && this[L].ctrlSeq !== "\\ "){
+    //       // text = '*' + text;
+    //       text = `*${text}`;
+    //     }
+    // if (this[R] && !(this[R] instanceof BinaryOperator)
+    //     && !(this[R] instanceof SupSub)){
+    //       // text += '*';
+    //       text = `${text}*`;
+
+    //     }
+    return `(${text})`;
   };
 });
 for (var fn in AutoOpNames) if (AutoOpNames.hasOwnProperty(fn)) {
