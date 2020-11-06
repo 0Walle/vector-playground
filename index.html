@@ -23,7 +23,7 @@
         }
 
         #defs {
-            min-width: 300px;
+            min-width: 400px;
             border-right: 1px solid #839496;
             display: flex;
             flex-direction: column;
@@ -32,11 +32,13 @@
             scrollbar-width: none;
         }
 
-        #defs div {
+        #defs .def-div {
             color: #fdf6e3;
             font-size: 115%;
             border-bottom: 1px solid #657b83;
-            padding: 15px;
+            display: flex;
+            flex-direction: row;
+            /* padding: 15px; */
         }
 
         #box-container {
@@ -51,33 +53,131 @@
         .math-field {
             border: none;
             box-shadow: none !important;
-            width: 100%;
+            width: calc(90% - 40px);
+            margin: 15px;
         }
 
         span .mq-cursor {
             border-left: 1px solid #fdf6e3 !important;
+        }
+
+        .color-button {
+            border-radius: 50%;
+            /* background: salmon; */
+            width: 20px;
+            height: 20px;
+            margin: 0 auto;
+            top: calc(50% - 10px);
+            position: relative;
+        }
+
+        .color-sel {
+            width: 40px;
+            height: 100%;
+            background: #073642;
+        }
+
+        /**************************************/
+
+        .toogle-switch {
+            position: relative;
+            display: inline-block;
+            width: 35px;
+            height: 20px;
+        }
+
+        .toogle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toogle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #073642;
+            -webkit-transition: .4s;
+            transition: background-color .4s;
+            border-radius: 34px;
+        }
+
+        .toogle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 2px;
+            background-color: #fdf6e3;
+            -webkit-transition: .4s;
+            transition: background-color .4s;
+            transition: transform .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toogle-slider {
+            background-color: #657b83;
+        }
+    
+        input:checked + .toogle-slider:before {
+            -webkit-transform: translateX(14px);
+            -ms-transform: translateX(14px);
+            transform: translateX(14px);
+        }
+
+        #config-selector {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            padding: 5px;
+            background: #002b36;
+            border: 1px solid #657b83;
+            border-radius: 5px;
+            color: #fdf6e3;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            z-index: 100;
         }
     </style>
 </head>
 <body oncontextmenu="return false;">
     <div id="view">
         <div id="defs">
-            <div onclick="new_object()" id="new-ref"><span style="font-size: 115%;">&nbsp;</span></div>
+            <div onclick="new_object()" id="new-ref" class="def-div">
+                <div class="color-sel"><div class="color-button"></div></div>
+                <span style="font-size: 115%; margin: 15px; display: block;">&nbsp;</span>
+            </div>
         </div>
         <div id="box-container">
             <canvas id="grid"></canvas>
             <canvas id="objs"></canvas>
         </div>
     </div>
+    <div id="config-selector" style="visibility: hidden;">
+        <div>
+            <label>Draggable</label>
+            <label class="toogle-switch">
+                <input type="checkbox" id="draggable">
+                <span class="toogle-slider"></span>
+            </label>
+        </div>
+    </div>
     <script type="text/javascript">
         const MQ = MathQuill.getInterface(2);
+
+        const config_selector = document.getElementById("config-selector");
 
         let Graph = {
             pan_x: 0,
             pan_y: 0,
             objects: [],
-            selected: null,
+            selected: false,
+            mousedown: false,
             fields: [],
+            mouse: {x: 0, y: 0}
         }
 
         let Canvas = {
@@ -163,35 +263,69 @@
 
                 this.obj_ctx.lineWidth = 4;
 
-                let environment = {};
+                let environment = {
+                    // 'P': {
+                    //     func: () => new Vec(Graph.mouse.x, Graph.mouse.y),
+                    //     val: undefined
+                    // }
+                };
 
                 for (const field of Graph.fields) {
                     if (field.ast == undefined) continue;
 
                     environment[field.obj_name] = {
                         func: field.ast,
-                        val: undefined
+                        val: undefined,
+                        field: field,
+                    }
+                }
+
+                if (Graph.selected) {
+                    environment[Graph.selected.name] = {
+                        func: Graph.selected.func,
+                        val: undefined,
+                        field: Graph.selected.field
                     }
                 }
 
                 for (const name in environment) {
                     const obj = environment[name];
 
-                    const result = execute_ast(obj.func, environment)
+                    const result = typeof obj.func == 'function' ? obj.func() 
+                                 : execute_ast(obj.func, environment)
 
-                    this.obj_ctx.strokeStyle = colors[0];
-                    this.obj_ctx.fillStyle = colors[0];
+                    this.obj_ctx.strokeStyle = obj.field.obj_color;
+                    this.obj_ctx.fillStyle = obj.field.obj_color;
                     // this.obj_ctx.strokeStyle = colors[obj.color];
                     // this.obj_ctx.fillStyle = colors[obj.color];
 
                     // const selected = obj == Graph.selected;
 
                     if (result instanceof Vec) {
+                        let dist = Math.hypot(Graph.mouse.x - result.x, Graph.mouse.y - result.y);
+                        if (dist <= 0.1 && obj.field.obj_draggable) {
+                            this.obj_ctx.beginPath();
+                            this.obj_ctx.arc(
+                                result.x * step + Graph.pan_x,
+                                result.y * step + Graph.pan_y,
+                                4, 0, 2 * Math.PI);
+                            this.obj_ctx.fill();
+
+                            if (Graph.mousedown) {
+                                Graph.selected = {
+                                    name: name,
+                                    func: () => new Vec(Graph.mouse.x, Graph.mouse.y),
+                                    field: obj.field
+                                }
+                            }
+
+                        }
+
                         draw_arrow(this.obj_ctx,
-                            Graph.pan_x, //obj.x1 * step + Graph.pan_x,
-                            Graph.pan_y, //obj.y1 * step + Graph.pan_y,
-                            result.x * step, //obj.x2 * step,
-                            result.y * step, //obj.y2 * step
+                            Graph.pan_x,
+                            Graph.pan_y,
+                            result.x * step,
+                            result.y * step,
                         );
                     }
                 }
@@ -200,54 +334,47 @@
 
         window.addEventListener("mousemove", e => {
             e.preventDefault();
+            
             if (e.buttons & 2) {
                 Graph.pan_x += e.movementX;
                 Graph.pan_y += e.movementY;
+            } 
 
-                Canvas.update();
-            } else if (e.buttons & 1) {
-                if (Graph.selected) {
-                    let [sx, sy] = snap2((e.offsetX - Graph.pan_x)/step, (e.offsetY - Graph.pan_y)/step)
-                    Graph.selected.x1 = sx;
-                    Graph.selected.y1 = sy;
-                }
+            if (Graph.selected) {
 
-                Canvas.update();
+                const latex = Graph.selected.name.length > 2 ? 
+                    `\\left(${Graph.mouse.x.toFixed(2)},${Graph.mouse.y.toFixed(2)}\\right)`
+                    : `${Graph.selected.name}=\\left(${Graph.mouse.x.toFixed(2)},${Graph.mouse.y.toFixed(2)}\\right)`
+
+                Graph.selected.field.latex(latex);
             }
+
+
+            let [sx, sy] = snap2((e.offsetX - Graph.pan_x)/step, (e.offsetY - Graph.pan_y)/step)
+            Graph.mouse.x = sx;
+            Graph.mouse.y = sy;
+            Canvas.update();
         })
 
         window.addEventListener("mousedown", e => {
+            if (e.target != config_selector && !config_selector.contains(e.target)) {
+                config_selector.style.visibility = 'hidden';
+            }
+            
+
             if (e.buttons & 1) {
                 e.preventDefault();
-                
-                for (const obj of Graph.objects) {
-                    switch (obj.kind) {
-                        case 'vector':
-                            // this.obj_ctx.beginPath();
-                            // draw_arrow(this.obj_ctx,
-                            //     obj.x1 * step + Graph.pan_x,
-                            //     obj.y1 * step + Graph.pan_y,
-                            //     obj.x2 * step + Graph.pan_x,
-                            //     obj.y2 * step + Graph.pan_y
-                            // );
-                            break;
-                        case 'point':
-                            const [x, y] = [obj.x1 * step + Graph.pan_x, obj.y1 * step + Graph.pan_y]
-                            const d = Math.hypot(x - e.offsetX, y - e.offsetY);
-                            if (d <= 4) {
-                                Graph.selected = obj
-                            }
-                            break;
-                    }
 
-                }
-
+                Graph.mousedown = true;
                 Canvas.update();
+                Graph.mousedown = false;
             }
         })
 
         window.addEventListener("mouseup", e => {
             Graph.selected = null;
+
+            Canvas.update();
         })
 
         window.addEventListener("resize", e => {
@@ -282,6 +409,18 @@
             const new_div = document.getElementById('new-ref');
             const defs_div = document.getElementById('defs');
             const div = document.createElement('div');
+            div.classList.add('def-div');
+            const div1 = document.createElement('div');
+            div1.classList.add('color-sel');
+            const div2 = document.createElement('div');
+            div2.classList.add('color-button');
+            div1.appendChild(div2);
+            div.appendChild(div1)
+
+            color = colors[Math.floor(Math.random() * colors.length)];
+
+            div2.style.background = color;
+
             const span = document.createElement('span');
             span.classList.add('math-field');
             div.appendChild(span)
@@ -301,6 +440,8 @@
                         try {
                             ast = parse_expression({source: format});
                         } catch(e) {
+                            math_field.ast = undefined;
+                            Canvas.update();
                             return;
                         }
 
@@ -309,7 +450,8 @@
                             math_field.obj_name = ast.lhs.val;
                         } else {
                             math_field.ast = ast;
-                            math_field.obj_name = '_' + String(Math.random());
+                            math_field.obj_name = '______' + String(math_field.id);
+                            console.log(math_field.id)
                         }
 
                         Canvas.update();
@@ -322,6 +464,21 @@
 
             math_field.ast = undefined;
             math_field.obj_name = undefined;
+            math_field.obj_color = color;
+            math_field.obj_draggable = false;
+
+            div2.onclick = (e) => {
+                config_selector.style.visibility = 'visible';
+                config_selector.style.left = e.pageX + 'px';
+                config_selector.style.top = e.pageY + 'px';
+
+                let input = document.getElementById('draggable');
+                input.checked = math_field.obj_draggable;
+
+                input.onchange = (e) => {
+                    math_field.obj_draggable = input.checked;
+                }
+            };
 
             Graph.fields.push(math_field);
         }

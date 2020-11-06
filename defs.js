@@ -33,6 +33,7 @@ function Point(x, y) {
 
 function draw_arrow(ctx, x1, y1, _x2, _y2) {
     if (_x2 == 0 && _y2 == 0) {
+        ctx.beginPath();
         ctx.arc(x1, y1, 6, 0, 2 * Math.PI);
         ctx.fill();    
         return;
