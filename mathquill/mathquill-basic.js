@@ -2856,6 +2856,11 @@ var Variable = P(Symbol, function(_, super_) {
   };
   _.text = function() {
     var text = this.ctrlSeq;
+
+    if (this.ctrlSeq.startsWith('\\operatorname')) {
+      return "\\" + text.slice(13)
+    }
+
     if (!this.isItalic) {
       return `${text}`
     }
@@ -2866,7 +2871,8 @@ var Variable = P(Symbol, function(_, super_) {
           text = `*${text}`;
         }
     if (this[R] && !(this[R] instanceof BinaryOperator)
-        && !(this[R] instanceof SupSub) && this[R].ctrlSeq !== ','){
+        && !(this[R] instanceof SupSub) && this[R].ctrlSeq !== ',' 
+        && !this[R].ctrlSeq.startsWith('\\operatorname')){
           // text += '*';
           text = `${text}*`;
 
@@ -3048,6 +3054,7 @@ var OperatorName = P(Symbol, function(_, super_) {
   };
   _.text = function() {
     var text = this.ctrlSeq;
+    console.log(this)
     // if (this[L] && !(this[L] instanceof Variable)
     //     && !(this[L] instanceof BinaryOperator)
     //     && this[L].ctrlSeq !== "\\ "){

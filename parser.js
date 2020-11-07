@@ -118,6 +118,19 @@ function parse_expression(source) {
     return parse_binary(source, parse_primary(source), 0);
 }
 
+function parse_definition(source) {
+    // console.log('before', source)
+    let expr = parse_expression(source)
+    source.source = source.source.trim()
+    let origin = null;
+    if (source.source.startsWith('\\{from}')) {
+        source.source = source.source.slice(7);
+        source.source = source.source.trim();
+        origin = parse_expression(source);
+    }
+    return {expr: expr, origin: origin};
+}
+
 class Num {
     constructor(n) {
         this.n = n

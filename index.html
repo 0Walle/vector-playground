@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A tool to play with vectors in a 2D plane. No, this wont plot functions! yet">
+    <meta name="description" content="A tool to play with vectors in a 2D plane.">
+    <meta property="og:image" content="https://i.ibb.co/30mZ9Hp/pic.png">
     <title>Vector Playground</title>
     <link rel="stylesheet" href="mathquill/mathquill.css"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="jquery/jquery.min.js"></script>
     <script src="mathquill/mathquill-basic.js"></script>
     <script src="defs.js"></script>
     <script src="parser.js"></script>
@@ -118,10 +119,14 @@
             left: 3px;
             bottom: 2px;
             background-color: #fdf6e3;
-            -webkit-transition: .4s;
+            -webkit-transition: transform .4s;
             transition: background-color .4s;
             transition: transform .4s;
             border-radius: 50%;
+        }
+
+        input:disabled + .toogle-slider:before {
+            background-color: #657b83;
         }
 
         input:checked + .toogle-slider {
@@ -209,6 +214,8 @@
         </div>
     </div>
     <script type="text/javascript">
+        "use strict"
+
         const MQ = MathQuill.getInterface(2);
 
         const config_selector = document.getElementById("config-selector");
@@ -216,11 +223,14 @@
         let Graph = {
             pan_x: 0,
             pan_y: 0,
+            middle_x: 0,
+            middle_y: 0,
             objects: [],
             selected: false,
             mousedown: false,
             fields: [],
-            mouse: {x: 0, y: 0}
+            mouse: {x: 0, y: 0},
+            step: 80
         }
 
         let Canvas = {
@@ -236,6 +246,8 @@
 
                 Graph.pan_x = rect.width/2;
                 Graph.pan_y = rect.height/2;
+                Graph.middle_x = rect.width/2;
+                Graph.middle_y = rect.height/2;
 
                 this.obj_layer.style.left = rect.x + 'px';
                 this.obj_layer.style.top = rect.top;
@@ -259,36 +271,104 @@
                 this.ctx.strokeStyle = "#839496";
                 this.ctx.fillStyle = "#fdf6e3";
 
-                const number_x_start = Math.trunc(-Graph.pan_x / step);
-                const number_y_start = Math.trunc(-Graph.pan_y / step);
+                // let grid_step = (Graph.step%50)+50;
+                // let number_step = 1/Math.floor(Graph.step/50);
+                // if (!isFinite(grid_step) || grid_step == 0) return;
 
-                for (let i = 0; i <= Math.trunc(size.x / step) + 1; i++) {
+                const number_x_start = Math.trunc(-Graph.pan_x / Graph.step);
+                const number_y_start = Math.trunc(-Graph.pan_y / Graph.step);
+
+                for (let i = 0; i <= Math.trunc(size.x / Graph.step) + 1;) {
+                    let aparent_size = Graph.step
+                    let num = (i + number_x_start);
+                    let skip = 0;
+
+                    while (aparent_size < 40) {
+                        skip += 1
+                        aparent_size *= 2
+                    }
+
+                    if (num % (2 ** skip) != 0) {
+                        i++
+                        continue
+                    }
+
                     if (i + number_x_start != 0) {
                         this.ctx.fillText(
                             String(i + number_x_start),
-                            (Graph.pan_x % step) + i * step + 4,
+                            (Graph.pan_x % Graph.step) + i * Graph.step + 4,
                             Math.min(Math.max(Graph.pan_y + 16, 16), size.y));
 
                         this.ctx.beginPath();
-                        this.ctx.moveTo((Graph.pan_x % step) + i * step, 0);
-                        this.ctx.lineTo((Graph.pan_x % step) + i * step, size.y);
+                        this.ctx.moveTo((Graph.pan_x % Graph.step) + i * Graph.step, 0);
+                        this.ctx.lineTo((Graph.pan_x % Graph.step) + i * Graph.step, size.y);
                         this.ctx.stroke();
                     }
+                    
+                    i += 1 + skip
                 }
 
-                for (let i = 0; i <= Math.trunc(size.y / step) + 1; i++) {
-                    if (i + number_y_start != 0) {
+                for (let i = 0; i <= Math.trunc(size.y / Graph.step) + 1;) {
+
+                    let aparent_size = Graph.step
+                    let num = (i + number_y_start);
+                    let skip = 0;
+
+                    while (aparent_size < 40) {
+                        skip += 1
+                        aparent_size *= 2
+                    }
+
+                    if (num % (2 ** skip) != 0) {
+                        i++
+                        continue
+                    }
+
+                    if (num != 0) {
                         this.ctx.fillText(
-                            String(i + number_y_start),
+                            String(num),
                             Math.min(Math.max(Graph.pan_x + 8, 8), size.x - 16),
-                            (Graph.pan_y % step) + i * step - 4);
+                            (Graph.pan_y % Graph.step) + i * Graph.step - 4);
 
                         this.ctx.beginPath();
-                        this.ctx.moveTo(0, (Graph.pan_y % step) + i * step);
-                        this.ctx.lineTo(size.x, (Graph.pan_y % step) + i * step);
+                        this.ctx.moveTo(0, (Graph.pan_y % Graph.step) + i * Graph.step);
+                        this.ctx.lineTo(size.x, (Graph.pan_y % Graph.step) + i * Graph.step);
                         this.ctx.stroke();
                     }
+                    
+                    i += 1 + skip
                 }
+
+                // const number_x_start = Math.trunc(-Graph.pan_x / grid_step) * number_step;
+                // const number_y_start = Math.trunc(-Graph.pan_y / grid_step) * number_step;
+
+                // for (let i = 0; i <= Math.trunc(size.x / grid_step) + 1; i++) {
+                //     if (i * number_step + number_x_start != 0) {
+                //         this.ctx.fillText(
+                //             (i * number_step + number_x_start).toFixed(2),
+                //             (Graph.pan_x % grid_step) + i * grid_step + 4,
+                //             Math.min(Math.max(Graph.pan_y + 16, 16), size.y));
+
+                //         this.ctx.beginPath();
+                //         this.ctx.moveTo((Graph.pan_x % grid_step) + i * grid_step, 0);
+                //         this.ctx.lineTo((Graph.pan_x % grid_step) + i * grid_step, size.y);
+                //         this.ctx.stroke();
+                //     }
+                // }
+
+                // for (let i = 0; i <= Math.trunc(size.y / grid_step) + 1; i++) {
+                //     if (i * number_step + number_y_start != 0) {
+                //         this.ctx.fillText(
+                //             (i * number_step + number_y_start).toFixed(2),
+                //             Math.min(Math.max(Graph.pan_x + 8, 8), size.x - 16),
+                //             (Graph.pan_y % grid_step) + i * grid_step - 4);
+
+                //         this.ctx.beginPath();
+                //         this.ctx.moveTo(0, (Graph.pan_y % grid_step) + i * grid_step);
+                //         this.ctx.lineTo(size.x, (Graph.pan_y % grid_step) + i * grid_step);
+                //         this.ctx.stroke();
+                //     }
+                // }
 
                 this.ctx.lineWidth = 2;
                 this.ctx.strokeStyle = "#fdf6e3";
@@ -319,6 +399,7 @@
                         val: undefined,
                         field: field,
                         visible: true,
+                        origin: field.obj_origin
                     }
                 }
 
@@ -328,6 +409,7 @@
                         val: undefined,
                         field: Graph.selected.field,
                         visible: true,
+                        origin: Graph.selected.origin
                     }
                 }
 
@@ -339,16 +421,21 @@
                     const result = typeof obj.func == 'function' ? obj.func() 
                                  : execute_ast(obj.func, environment)
 
+                    let origin = null;
+                    if (obj.origin) {
+                        origin = execute_ast(obj.origin, environment)
+                    }
+
                     this.obj_ctx.strokeStyle = colors[obj.field.obj_color];
                     this.obj_ctx.fillStyle = colors[obj.field.obj_color];
 
                     if (result instanceof Vec) {
                         let dist = Math.hypot(Graph.mouse.x - result.x, Graph.mouse.y - result.y);
-                        if (dist <= 0.1 && obj.field.obj_draggable) {
+                        if (dist <= 0.1 * (80/Graph.step) && obj.field.obj_draggable) {
                             this.obj_ctx.beginPath();
                             this.obj_ctx.arc(
-                                result.x * step + Graph.pan_x,
-                                result.y * step + Graph.pan_y,
+                                result.x * Graph.step + Graph.pan_x,
+                                result.y * Graph.step + Graph.pan_y,
                                 4, 0, 2 * Math.PI);
                             this.obj_ctx.fill();
 
@@ -359,13 +446,27 @@
                                     field: obj.field
                                 }
                             }
+                        } else if (obj.field.obj_draggable) {
+                            this.obj_ctx.beginPath();
+                            this.obj_ctx.arc(
+                                result.x * Graph.step + Graph.pan_x,
+                                result.y * Graph.step + Graph.pan_y,
+                                2, 0, 2 * Math.PI);
+                            this.obj_ctx.fill();
+                        }
+
+                        let ox = Graph.pan_x
+                        let oy = Graph.pan_y
+                        if (origin instanceof Vec) {
+                            ox += origin.x * Graph.step
+                            oy += origin.y * Graph.step
                         }
 
                         draw_arrow(this.obj_ctx,
-                            Graph.pan_x,
-                            Graph.pan_y,
-                            result.x * step,
-                            result.y * step,
+                            ox,
+                            oy,
+                            result.x * Graph.step,
+                            result.y * Graph.step,
                         );
                     }
                 }
@@ -390,7 +491,7 @@
             }
 
 
-            let [sx, sy] = snap2((e.offsetX - Graph.pan_x)/step, (e.offsetY - Graph.pan_y)/step)
+            let [sx, sy] = snap2((e.offsetX - Graph.pan_x)/Graph.step, (e.offsetY - Graph.pan_y)/Graph.step)
             Graph.mouse.x = sx;
             Graph.mouse.y = sy;
             Canvas.update();
@@ -417,6 +518,20 @@
             Canvas.update();
         })
 
+        Canvas.obj_layer.addEventListener("wheel", e => {
+            if (Math.sign(e.deltaY) < 0) {
+                Graph.step *= 1.05;
+                Graph.pan_x = (Graph.pan_x - Graph.middle_x) * 1.005 + Graph.middle_x;
+                Graph.pan_y = (Graph.pan_y - Graph.middle_y) * 1.005 + Graph.middle_y;
+            } else {
+                Graph.step *= 0.95;
+                Graph.pan_x = (Graph.pan_x - Graph.middle_x) * 0.995 + Graph.middle_x;
+                Graph.pan_y = (Graph.pan_y - Graph.middle_y) * 0.995 + Graph.middle_y;
+            }
+        
+            Canvas.update()
+        })
+
         window.addEventListener("resize", e => {
             Canvas.element.width = 0;
             Canvas.element.height = 0;
@@ -429,6 +544,8 @@
 
             Graph.pan_x = rect.width/2;
             Graph.pan_y = rect.height/2;
+            Graph.middle_x = rect.width/2;
+            Graph.middle_y = rect.height/2;
 
             Canvas.obj_layer.style.left = rect.x + 'px';
             Canvas.obj_layer.style.top = rect.top;
@@ -475,36 +592,46 @@
                 handlers: {
                     edit: function() {
                         let format = math_field.text();
-                        console.log(format)
                         if (!format) return;
-                        let ast
+                        let def
                         try {
-                            ast = parse_expression({source: format});
+                            def = parse_definition({source: format});
                         } catch(e) {
                             math_field.ast = undefined;
+                            math_field.obj_origin = undefined;
                             Canvas.update();
                             return;
                         }
 
+                        const ast = def.expr;
+                        const origin = def.origin;
+
+                        if (origin) {
+                            math_field.obj_draggable = false;
+                        }
+
                         if (ast.kind == 'op' && ast.op == '=') {
                             math_field.ast = ast.rhs;
+                            math_field.obj_origin = origin;
                             math_field.obj_name = ast.lhs.val;
                         } else {
                             math_field.ast = ast;
+                            math_field.obj_origin = origin;
                             math_field.obj_name = '______' + String(math_field.id);
-                            console.log(math_field.id)
                         }
 
                         Canvas.update();
                     }
                 },
                 autoCommands: 'pi theta sqrt',
+                autoOperatorNames: 'sin cos from',
             });
 
             math_field.focus();
 
             math_field.ast = undefined;
             math_field.obj_name = undefined;
+            math_field.obj_origin = undefined;
             math_field.obj_color = color;
             math_field.obj_draggable = false;
 
@@ -514,13 +641,22 @@
                 config_selector.style.top = e.pageY + 'px';
 
                 let input = document.getElementById('draggable');
+                input.disabled = false;
+                if (math_field.obj_origin) {
+                    math_field.obj_draggable = false;
+                    input.disabled = true;
+                }
+
                 input.checked = math_field.obj_draggable;
 
                 input.onchange = (e) => {
                     math_field.obj_draggable = input.checked;
                 }
 
+                
                 let color_input = document.getElementById('color-pal');
+                [...color_input.children].map((c, i) => { c.classList.remove('sel');});
+
                 [...color_input.children].map((c, i) => {
                     // c.classList.remove('sel');
                     c.onclick = () => {
