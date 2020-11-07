@@ -592,6 +592,7 @@
                 handlers: {
                     edit: function() {
                         let format = math_field.text();
+                        console.log(format)
                         if (!format) return;
                         let def
                         try {
@@ -625,6 +626,7 @@
                 },
                 autoCommands: 'pi theta sqrt',
                 autoOperatorNames: 'sin cos from',
+                spaceBehavesLikeTab: true
             });
 
             math_field.focus();

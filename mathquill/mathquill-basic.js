@@ -2870,7 +2870,7 @@ var Variable = P(Symbol, function(_, super_) {
           // text = '*' + text;
           text = `*${text}`;
         }
-    if (this[R] && !(this[R] instanceof BinaryOperator)
+    if (this[R] && !(this[R] instanceof BinaryOperator) && !(this[R] instanceof Equality)
         && !(this[R] instanceof SupSub) && this[R].ctrlSeq !== ',' 
         && !this[R].ctrlSeq.startsWith('\\operatorname')){
           // text += '*';
