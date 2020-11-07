@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="An tool to play with vectors in a 2D plane. No, this wont plot functions! yet">
+    <meta name="description" content="A tool to play with vectors in a 2D plane. No, this wont plot functions! yet">
     <title>Vector Playground</title>
     <link rel="stylesheet" href="mathquill/mathquill.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -31,6 +31,11 @@
             max-height: 100vh;
             overflow-y: scroll;
             scrollbar-width: none;
+            
+        }
+
+        #defs::-webkit-scrollbar {
+            display: none;
         }
 
         #defs .def-div {
