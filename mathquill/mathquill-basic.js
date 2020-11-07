@@ -3647,7 +3647,10 @@ LatexCmds['^'] = P(SupSub, function(_, super_) {
     +   '<span class="mq-sup">&0</span>'
     + '</span>'
   ;
-  _.textTemplate = [ '^' ];
+  _.textTemplate = [ '^(', ')' ];
+  // _.text = function() {
+  //   return `(^)`;
+  // }
   _.finalizeTree = function() {
     this.upInto = this.sup = this.ends[R];
     this.sup.downOutOf = insLeftOfMeUnlessAtEnd;
@@ -3780,7 +3783,7 @@ LatexCmds['\u221a'] = P(MathCommand, function(_, super_) {
     +   '<span class="mq-non-leaf mq-sqrt-stem">&0</span>'
     + '</span>'
   ;
-  _.textTemplate = ['sqrt(', ')'];
+  _.textTemplate = ['\\sqrt(', ')'];
   _.parser = function() {
     return latexMathParser.optBlock.then(function(optBlock) {
       return latexMathParser.block.map(function(block) {

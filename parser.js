@@ -1,4 +1,5 @@
 const op_regex = /^[+*-/^=]/;
+const func_regex = /^(\\sqrt|\\sin|\\cos)/;
 const num_regex = /^(\d+)(\.\d+)?/;
 const id_regex = /^[a-zA-Z]'*/;
 
@@ -11,6 +12,8 @@ function next_token(source) {
     if (/\|/.exec(source.source[0])) return source.source.slice(1);
 
     if (match = op_regex.exec(source.source)) {
+        return source.source.slice(match[0].length);
+    } else if (match = func_regex.exec(source.source)) {
         return source.source.slice(match[0].length);
     } else if (match = num_regex.exec(source.source)) {
         return source.source.slice(match[0].length);
@@ -29,6 +32,8 @@ function peek_token(source) {
     
     if (match = op_regex.exec(t)) {
         return {kind: 'op', val: match[0]};
+    } else if (match = func_regex.exec(source.source)) {
+        return {kind: 'func', val: match[0].slice(1)};
     } else if (match = num_regex.exec(t)) {
         return {kind: 'number', val: match[0]};
     } else if (match = id_regex.exec(t)) {
@@ -42,33 +47,33 @@ const operator = {
     '-': {prec: 2, right: false},
     '*': {prec: 3, right: false},
     '/': {prec: 3, right: false},
+    '^': {prec: 4, right: false},
 }
 
 function parse_binary(source, lhs, min_prec) {
     let lk = peek_token(source);
-    // if (lk) {
-        // if (lk.kind != 'op') return lhs;
-        // lk = lk.val;
-        while (lk && lk.kind == 'op' && operator[lk.val].prec >= min_prec) {
-            let op = lk.val;
-            source.source = next_token(source);
-            let rhs = parse_primary(source);
+    while (lk && lk.kind == 'op' && operator[lk.val].prec >= min_prec) {
+        let op = lk.val;
+        source.source = next_token(source);
+        let rhs = parse_primary(source);
+        lk = peek_token(source);
+        while (lk && lk.kind == 'op' && (operator[lk.val].prec > operator[op].prec || (operator[lk.val].right && operator[lk.val].prec == operator[op].prec))) {
+            rhs = parse_binary(source, rhs, operator[lk.val].prec)
             lk = peek_token(source);
-            // if (lk && lk.kind == 'op') {
-                // lk = lk.val;
-                while (lk && lk.kind == 'op' && (operator[lk.val].prec > operator[op].prec || (operator[lk.val].right && operator[lk.val].prec == operator[op].prec))) {
-                    rhs = parse_binary(source, rhs, operator[lk.val].prec)
-                    lk = peek_token(source);
-                }
-            // }
-            lhs = {kind: 'op', op: op, lhs: lhs, rhs: rhs};
         }
-    // }
+        lhs = {kind: 'op', op: op, lhs: lhs, rhs: rhs};
+    }
     return lhs
 }
 
 function parse_primary(source) {
     let tk = peek_token(source);
+
+    if (tk.kind == 'func') {
+        source.source = next_token(source);
+        let lhs = parse_primary(source);
+        return {kind: 'op', op: tk.val, lhs: lhs}
+    }
 
     if (tk.kind == 'op' && tk.val == '-') {
         source.source = next_token(source);
@@ -222,6 +227,12 @@ function execute_ast(ast, env) {
                 rhs = execute_ast(ast.rhs, env);
                 if (lhs == undefined || rhs == undefined) return undefined;
                 return lhs.mul(rhs);
+            case '^':
+                lhs = execute_ast(ast.lhs, env);
+                rhs = execute_ast(ast.rhs, env);
+                if (lhs == undefined || rhs == undefined) return undefined;
+                if (!(lhs instanceof Num && rhs instanceof Num)) return undefined;
+                return new Num(lhs.n ** rhs.n);
             case '/': 
                 lhs = execute_ast(ast.lhs, env);
                 rhs = execute_ast(ast.rhs, env);
@@ -235,6 +246,21 @@ function execute_ast(ast, env) {
                 lhs = execute_ast(ast.lhs, env);
                 if (lhs == undefined) return undefined;
                 return lhs.neg();
+            case 'sqrt':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                if (!(lhs instanceof Num)) return undefined;
+                return new Num(Math.sqrt(lhs.n));
+            case 'sin':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                if (!(lhs instanceof Num)) return undefined;
+                return new Num(Math.sin(lhs.n));
+            case 'cos':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                if (!(lhs instanceof Num)) return undefined;
+                return new Num(Math.cos(lhs.n));
             case 'vector':
                 lhs = execute_ast(ast.lhs, env);
                 rhs = execute_ast(ast.rhs, env);

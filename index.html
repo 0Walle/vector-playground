@@ -264,10 +264,8 @@
                 this.obj_ctx.lineWidth = 4;
 
                 let environment = {
-                    // 'P': {
-                    //     func: () => new Vec(Graph.mouse.x, Graph.mouse.y),
-                    //     val: undefined
-                    // }
+                    'i': { func: () => new Vec(1, 0), val: undefined },
+                    'j': { func: () => new Vec(0, 1), val: undefined },
                 };
 
                 for (const field of Graph.fields) {
@@ -296,10 +294,6 @@
 
                     this.obj_ctx.strokeStyle = obj.field.obj_color;
                     this.obj_ctx.fillStyle = obj.field.obj_color;
-                    // this.obj_ctx.strokeStyle = colors[obj.color];
-                    // this.obj_ctx.fillStyle = colors[obj.color];
-
-                    // const selected = obj == Graph.selected;
 
                     if (result instanceof Vec) {
                         let dist = Math.hypot(Graph.mouse.x - result.x, Graph.mouse.y - result.y);
@@ -318,7 +312,6 @@
                                     field: obj.field
                                 }
                             }
-
                         }
 
                         draw_arrow(this.obj_ctx,
@@ -415,7 +408,7 @@
             const div2 = document.createElement('div');
             div2.classList.add('color-button');
             div1.appendChild(div2);
-            div.appendChild(div1)
+            div.appendChild(div1);
 
             color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -435,6 +428,7 @@
                 handlers: {
                     edit: function() {
                         let format = math_field.text();
+                        console.log(format)
                         if (!format) return;
                         let ast
                         try {
