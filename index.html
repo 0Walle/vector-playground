@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An tool to play with vectors in a 2D plane. No, this wont plot functions! yet">
     <title>Vector Playground</title>
     <link rel="stylesheet" href="mathquill/mathquill.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -63,7 +64,6 @@
 
         .color-button {
             border-radius: 50%;
-            /* background: salmon; */
             width: 20px;
             height: 20px;
             margin: 0 auto;
@@ -140,6 +140,31 @@
             color: #fdf6e3;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #color-pal {
+            display: grid;
+            grid-template-rows: auto auto;
+            grid-template-columns: auto auto auto auto;
+            padding: 5px;
+        }
+
+        #color-pal .color-button {
+            margin: 2px 0px;
+        }
+
+        #color-pal .sel::before {
+            display: inline-block;
+            position: absolute;
+            background-color: white;
+            height: 10px;
+            width: 10px;
+            left: 5px;
+            top: 5px;
+            border-radius: 50%;
+            content: "";
         }
     </style>
 </head>
@@ -163,6 +188,19 @@
                 <input type="checkbox" id="draggable">
                 <span class="toogle-slider"></span>
             </label>
+        </div>
+        <div style="padding-top: 5px;">
+            <label>Color</label>
+            <div id="color-pal">
+                <div class="color-button" style="background: #dc322f;"></div>
+                <div class="color-button" style="background: #859900;"></div>
+                <div class="color-button" style="background: #b58900;"></div>
+                <div class="color-button" style="background: #cb4b16;"></div>
+                <div class="color-button" style="background: #d33682;"></div>
+                <div class="color-button" style="background: #6c71c4;"></div>
+                <div class="color-button" style="background: #268bd2;"></div>
+                <div class="color-button" style="background: #2aa198;"></div>
+            </div>
         </div>
     </div>
     <script type="text/javascript">
@@ -264,8 +302,8 @@
                 this.obj_ctx.lineWidth = 4;
 
                 let environment = {
-                    'i': { func: () => new Vec(1, 0), val: undefined },
-                    'j': { func: () => new Vec(0, 1), val: undefined },
+                    'i': { func: () => new Vec(1, 0), val: undefined, visible: false },
+                    'j': { func: () => new Vec(0, 1), val: undefined, visible: false },
                 };
 
                 for (const field of Graph.fields) {
@@ -275,6 +313,7 @@
                         func: field.ast,
                         val: undefined,
                         field: field,
+                        visible: true,
                     }
                 }
 
@@ -282,18 +321,21 @@
                     environment[Graph.selected.name] = {
                         func: Graph.selected.func,
                         val: undefined,
-                        field: Graph.selected.field
+                        field: Graph.selected.field,
+                        visible: true,
                     }
                 }
 
                 for (const name in environment) {
                     const obj = environment[name];
 
+                    if (!obj.visible) continue;
+
                     const result = typeof obj.func == 'function' ? obj.func() 
                                  : execute_ast(obj.func, environment)
 
-                    this.obj_ctx.strokeStyle = obj.field.obj_color;
-                    this.obj_ctx.fillStyle = obj.field.obj_color;
+                    this.obj_ctx.strokeStyle = colors[obj.field.obj_color];
+                    this.obj_ctx.fillStyle = colors[obj.field.obj_color];
 
                     if (result instanceof Vec) {
                         let dist = Math.hypot(Graph.mouse.x - result.x, Graph.mouse.y - result.y);
@@ -395,8 +437,8 @@
         Canvas.init();
         Canvas.update();
 
-        let p = Point(2, 1);
-        Graph.objects.push(p);
+        // let p = Point(2, 1);
+        // Graph.objects.push(p);
 
         function new_object(color = 0){
             const new_div = document.getElementById('new-ref');
@@ -410,9 +452,9 @@
             div1.appendChild(div2);
             div.appendChild(div1);
 
-            color = colors[Math.floor(Math.random() * colors.length)];
+            color = Math.floor(Math.random() * colors.length);
 
-            div2.style.background = color;
+            div2.style.background = colors[color];
 
             const span = document.createElement('span');
             span.classList.add('math-field');
@@ -420,9 +462,9 @@
 
             defs_div.insertBefore(div, new_div);
 
-            let v = Vector(0, 0);
-            Graph.objects.push(v);
-            v.color = color;
+            // let v = Vector(0, 0);
+            // Graph.objects.push(v);
+            // v.color = color;
             
             let math_field = MQ.MathField(span, {
                 handlers: {
@@ -472,6 +514,22 @@
                 input.onchange = (e) => {
                     math_field.obj_draggable = input.checked;
                 }
+
+                let color_input = document.getElementById('color-pal');
+                [...color_input.children].map((c, i) => {
+                    // c.classList.remove('sel');
+                    c.onclick = () => {
+                        div2.style.background = colors[i];
+                        color_input.children[math_field.obj_color].classList.remove('sel')
+                        math_field.obj_color = i
+                        c.classList.add('sel');
+                    }
+                })
+                color_input.children[math_field.obj_color].classList.add('sel')
+
+                // input.onchange = (e) => {
+                //     math_field.obj_draggable = input.checked;
+                // }
             };
 
             Graph.fields.push(math_field);
