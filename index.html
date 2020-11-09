@@ -639,6 +639,7 @@
                         try {
                             def = parse_definition({source: format});
                         } catch(e) {
+                            console.error(e)
                             math_field.ast = undefined;
                             math_field.obj_origin = undefined;
                             Canvas.update();

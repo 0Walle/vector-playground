@@ -1,3 +1,5 @@
+"use strict"
+
 const op_regex = /^[+*-/^=]/;
 const func_regex = /^(\\sqrt|\\sin|\\cos|\\tan|\\arcsin|\\arccos|\\arctan)/;
 const num_regex = /^(\d+)(\.\d+)?/;
@@ -111,11 +113,64 @@ function parse_primary(source) {
 
     if (tk.kind != 'number' && tk.kind != 'id') throw "Não";
     source.source = next_token(source);
-    return tk;
+
+    let lhs = tk;
+
+    tk = peek_token(source);
+
+    if (!tk) return lhs;
+
+    if (tk.kind == 'func') {
+        source.source = next_token(source);
+        let other_lhs = parse_primary(source);
+        let rhs = {kind: 'op', op: tk.val, lhs: other_lhs}
+        lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
+    } else {
+        while (tk && tk.kind == 'paren' && tk.val == '(') {
+            let rhs = parse_paren(source)
+            lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
+
+            tk = peek_token(source);
+        }
+    }
+    
+    // if (tk.kind == 'paren' && tk.val == '(') {
+    //     let rhs = parse_paren(source)
+    //     lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
+    //     do {
+    //         tk = peek_token(source);
+    //         if (!tk) break;
+
+    //         if (tk.kind == 'paren' && tk.val == '(') {
+    //             let rhs = parse_paren(source)
+    //             lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
+    //         } else break;
+    //     } while(true)
+    // }
+
+    return lhs;
+}
+
+function parse_paren(source) {
+    source.source = next_token(source);
+    let lhs = parse_binary(source, parse_primary(source), 0);
+    let tk = peek_token(source);
+    if (tk.kind == 'comma') {
+        source.source = next_token(source);
+        let rhs = parse_binary(source, parse_primary(source), 0);
+        lhs = {kind: 'op', op: 'vector', lhs: lhs, rhs: rhs}
+        tk = peek_token(source);
+    }
+    if (tk.kind == 'paren' && tk.val == ')') {
+        source.source = next_token(source);
+        return lhs
+    }
+    throw "Nooo"
 }
 
 function parse_expression(source) {
-    return parse_binary(source, parse_primary(source), 0);
+    let result = parse_binary(source, parse_primary(source), 0);
+    return result;
 }
 
 function parse_definition(source) {
