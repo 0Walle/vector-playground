@@ -60,8 +60,17 @@
         .math-field {
             border: none;
             box-shadow: none !important;
-            width: calc(90% - 40px);
+            /* width: calc(90% - 40px); */
+            width: 100%;
             margin: 15px;
+        }
+
+        .number-area {
+            margin-left: 15px;
+            margin-bottom: 5px;
+            font-family: Symbola, "Times New Roman", serif;
+            display: inline-block;
+            /* visibility: hidden; */
         }
 
         span .mq-cursor {
@@ -81,6 +90,10 @@
             width: 40px;
             height: 100%;
             background: #073642;
+        }
+
+        .def-right {
+            width: calc(90% - 40px);
         }
 
         /**************************************/
@@ -392,6 +405,7 @@
                 };
 
                 for (const field of Graph.fields) {
+                    field.obj_num.style.display = 'none'
                     if (field.ast == undefined) continue;
 
                     environment[field.obj_name] = {
@@ -468,6 +482,17 @@
                             result.x * Graph.step,
                             result.y * Graph.step,
                         );
+                    } else if (result instanceof Num) {
+                        obj.field.obj_num.style.display = 'inline-block'
+
+                        let num = isNaN(result.n)? undefined : result.n;
+
+                        if (result.un == 'rad') {
+                            let deg = 180/Math.PI*num 
+                            obj.field.obj_num.innerText = `= ${num.toFixed(2).replace(/(?!\d+\.)0+$/, '').replace(/\.$/, '')} rad, ${String(isNaN(deg)? 'undefined' : deg.toFixed(2)).replace(/(?!\d+\.)0+$/, '').replace(/\.$/, '')}°`
+                        } else {
+                            obj.field.obj_num.innerText = `= ${num}`
+                        }
                     }
                 }
             },
@@ -574,13 +599,24 @@
             div1.appendChild(div2);
             div.appendChild(div1);
 
+
             color = Math.floor(Math.random() * colors.length);
 
             div2.style.background = colors[color];
 
             const span = document.createElement('span');
             span.classList.add('math-field');
-            div.appendChild(span)
+            
+            const div4 = document.createElement('div');
+            div4.classList.add('def-right');
+            
+            div4.appendChild(span)
+
+            const number_area = document.createElement('span');
+            number_area.classList.add('number-area')
+            number_area.style.display = 'none'
+            div4.appendChild(number_area)
+            div.appendChild(div4)
 
             defs_div.insertBefore(div, new_div);
 
@@ -593,7 +629,12 @@
                     edit: function() {
                         let format = math_field.text();
                         console.log(format)
-                        if (!format) return;
+                        if (!format) {
+                            math_field.ast = undefined;
+                            math_field.obj_origin = undefined;
+                            Canvas.update();
+                            return;
+                        };
                         let def
                         try {
                             def = parse_definition({source: format});
@@ -625,7 +666,7 @@
                     }
                 },
                 autoCommands: 'pi theta sqrt',
-                autoOperatorNames: 'sin cos from',
+                autoOperatorNames: 'sin cos tan arcsin arccos arctan from',
                 spaceBehavesLikeTab: true
             });
 
@@ -636,6 +677,8 @@
             math_field.obj_origin = undefined;
             math_field.obj_color = color;
             math_field.obj_draggable = false;
+
+            math_field.obj_num = number_area;
 
             div2.onclick = (e) => {
                 config_selector.style.visibility = 'visible';

@@ -1,5 +1,5 @@
 const op_regex = /^[+*-/^=]/;
-const func_regex = /^(\\sqrt|\\sin|\\cos)/;
+const func_regex = /^(\\sqrt|\\sin|\\cos|\\tan|\\arcsin|\\arccos|\\arctan)/;
 const num_regex = /^(\d+)(\.\d+)?/;
 const id_regex = /^[a-zA-Z]'*/;
 
@@ -132,8 +132,9 @@ function parse_definition(source) {
 }
 
 class Num {
-    constructor(n) {
+    constructor(n, un = null) {
         this.n = n
+        this.un = un
     }
 
     add(b) {
@@ -274,6 +275,26 @@ function execute_ast(ast, env) {
                 if (lhs == undefined) return undefined;
                 if (!(lhs instanceof Num)) return undefined;
                 return new Num(Math.cos(lhs.n));
+            case 'tan':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                if (!(lhs instanceof Num)) return undefined;
+                return new Num(Math.tan(lhs.n));
+            case 'arcsin':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                if (!(lhs instanceof Num)) return undefined;
+                return new Num(Math.asin(lhs.n), 'rad');
+            case 'arccos':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                if (!(lhs instanceof Num)) return undefined;
+                return new Num(Math.acos(lhs.n), 'rad');
+            case 'arctan':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined) return undefined;
+                if (!(lhs instanceof Num)) return undefined;
+                return new Num(Math.atan(lhs.n), 'rad');
             case 'vector':
                 lhs = execute_ast(ast.lhs, env);
                 rhs = execute_ast(ast.rhs, env);
