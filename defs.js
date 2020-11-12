@@ -64,3 +64,14 @@ function snap2(val1, val2) {
     let sy = Math.abs(Math.round(val2) - val2) < 0.1;
     return sx && sy ? [Math.round(val1),Math.round(val2)] : [val1, val2];
 }
+
+function is_ast_num_literal(ast) {
+    return ast.kind == 'number' 
+        || (ast.kind == 'op' && ast.op == 'neg' && ast.lhs.kind == 'number')
+}
+
+function create_element(tag, klass) {
+    const el = document.createElement(tag);
+    el.classList.add(klass);
+    return el;
+}

@@ -7,6 +7,7 @@
     <meta property="og:image" content="https://i.ibb.co/30mZ9Hp/pic.png">
     <title>Vector Playground</title>
     <link rel="stylesheet" href="mathquill/mathquill.css"/>
+    <script src="https://code.iconify.design/1/1.0.2/iconify.min.js"></script>
     <script src="jquery/jquery.min.js"></script>
     <script src="mathquill/mathquill-basic.js"></script>
     <script src="defs.js"></script>
@@ -60,8 +61,7 @@
         .math-field {
             border: none;
             box-shadow: none !important;
-            /* width: calc(90% - 40px); */
-            width: 100%;
+            width: 80%;
             margin: 15px;
         }
 
@@ -82,7 +82,16 @@
             width: 20px;
             height: 20px;
             margin: 0 auto;
-            top: calc(50% - 10px);
+            /* top: calc(50% - 15px); */
+            position: relative;
+        }
+
+        .def-color-button {
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            margin: 0 auto;
+            top: calc(50% - 15px);
             position: relative;
         }
 
@@ -90,10 +99,55 @@
             width: 40px;
             height: 100%;
             background: #073642;
+            flex-shrink: 0;
         }
 
         .def-right {
-            width: calc(90% - 40px);
+            /* width: calc(100% - 80px); */
+            flex-grow: 1;
+        }
+
+        .def-close .iconify {
+            width: 30px;
+            height: 30px; 
+            color: #93a1a1;
+        }
+
+        .def-slider > * {
+            vertical-align: middle;
+            display: inline;
+        }
+
+        input[type=range]::-moz-range-thumb {
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            background: #fdf6e3;
+        }
+
+        input[type=range]{
+            background: #002b36;
+            margin: 0px 10px;
+            display: inline-block;
+            padding: 5px 0px;
+        }
+
+        input[type=range]::-moz-range-track {
+            height: 5px;
+            background: #073642;
+        }
+
+        #config-slider-limit input[type=text]{
+            background: #002b36;
+            display: inline;
+            border: none;
+            margin: 0px;
+            padding: 0px;
+            font-family: Symbola, "Times New Roman", serif;
+            color: white;
+            font-size: 115%;
+            /* border-bottom: 1px solid #657b83; */
+            width: 4em;
         }
 
         /**************************************/
@@ -167,6 +221,21 @@
             flex-direction: column;
         }
 
+        #config-anim {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            padding: 5px;
+            background: #002b36;
+            border: 1px solid #657b83;
+            border-radius: 5px;
+            color: #fdf6e3;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
         #color-pal {
             display: grid;
             grid-template-rows: auto auto;
@@ -225,6 +294,9 @@
                 <div class="color-button" style="background: #2aa198;"></div>
             </div>
         </div>
+    </div>
+    <div id="config-anim" style="visibility: hidden;">
+        <div id="config-slider-limit" style="display: none;"><input type="text" value="-5" style="text-align: right;"><span>&nbsp;...&nbsp;</span><input type="text" value="5"></div>
     </div>
     <script type="text/javascript">
         "use strict"
@@ -352,37 +424,6 @@
                     i += 1 + skip
                 }
 
-                // const number_x_start = Math.trunc(-Graph.pan_x / grid_step) * number_step;
-                // const number_y_start = Math.trunc(-Graph.pan_y / grid_step) * number_step;
-
-                // for (let i = 0; i <= Math.trunc(size.x / grid_step) + 1; i++) {
-                //     if (i * number_step + number_x_start != 0) {
-                //         this.ctx.fillText(
-                //             (i * number_step + number_x_start).toFixed(2),
-                //             (Graph.pan_x % grid_step) + i * grid_step + 4,
-                //             Math.min(Math.max(Graph.pan_y + 16, 16), size.y));
-
-                //         this.ctx.beginPath();
-                //         this.ctx.moveTo((Graph.pan_x % grid_step) + i * grid_step, 0);
-                //         this.ctx.lineTo((Graph.pan_x % grid_step) + i * grid_step, size.y);
-                //         this.ctx.stroke();
-                //     }
-                // }
-
-                // for (let i = 0; i <= Math.trunc(size.y / grid_step) + 1; i++) {
-                //     if (i * number_step + number_y_start != 0) {
-                //         this.ctx.fillText(
-                //             (i * number_step + number_y_start).toFixed(2),
-                //             Math.min(Math.max(Graph.pan_x + 8, 8), size.x - 16),
-                //             (Graph.pan_y % grid_step) + i * grid_step - 4);
-
-                //         this.ctx.beginPath();
-                //         this.ctx.moveTo(0, (Graph.pan_y % grid_step) + i * grid_step);
-                //         this.ctx.lineTo(size.x, (Graph.pan_y % grid_step) + i * grid_step);
-                //         this.ctx.stroke();
-                //     }
-                // }
-
                 this.ctx.lineWidth = 2;
                 this.ctx.strokeStyle = "#fdf6e3";
 
@@ -413,7 +454,8 @@
                         val: undefined,
                         field: field,
                         visible: true,
-                        origin: field.obj_origin
+                        origin: field.obj_origin,
+                        val_origin: undefined
                     }
                 }
 
@@ -423,7 +465,8 @@
                         val: undefined,
                         field: Graph.selected.field,
                         visible: true,
-                        origin: Graph.selected.origin
+                        origin: Graph.selected.origin,
+                        val_origin: undefined
                     }
                 }
 
@@ -437,7 +480,8 @@
 
                     let origin = null;
                     if (obj.origin) {
-                        origin = execute_ast(obj.origin, environment)
+                        origin = execute_ast(obj.origin, environment);
+                        obj.val_origin = origin;
                     }
 
                     this.obj_ctx.strokeStyle = colors[obj.field.obj_color];
@@ -485,23 +529,27 @@
                     } else if (result instanceof Num) {
                         obj.field.obj_num.style.display = 'inline-block'
 
-                        let num = isNaN(result.n)? undefined : result.n;
-
-                        if (result.un == 'rad') {
-                            let deg = 180/Math.PI*num 
-                            obj.field.obj_num.innerText = `= ${num.toFixed(2).replace(/(?!\d+\.)0+$/, '').replace(/\.$/, '')} rad, ${String(isNaN(deg)? 'undefined' : deg.toFixed(2)).replace(/(?!\d+\.)0+$/, '').replace(/\.$/, '')}°`
+                        if (obj.field.obj_draggable) {
+                            
                         } else {
-                            obj.field.obj_num.innerText = `= ${num}`
+                            let num = isNaN(result.n)? undefined : result.n;
+    
+                            if (result.un == 'rad') {
+                                let deg = 180/Math.PI*num 
+                                obj.field.obj_num.innerText = `= ${num.toFixed(2).replace(/(?!\d+\.)0+$/, '').replace(/\.$/, '')} rad, ${String(isNaN(deg)? 'undefined' : deg.toFixed(2)).replace(/(?!\d+\.)0+$/, '').replace(/\.$/, '')}°`
+                            } else {
+                                obj.field.obj_num.innerText = `= ${num}`
+                            }
                         }
+
                     }
                 }
             },
         }
 
-        window.addEventListener("mousemove", e => {
-            e.preventDefault();
-            
+        Canvas.obj_layer.addEventListener("mousemove", e => {
             if (e.buttons & 2) {
+                e.preventDefault();
                 Graph.pan_x += e.movementX;
                 Graph.pan_y += e.movementY;
             } 
@@ -529,7 +577,7 @@
             
 
             if (e.buttons & 1) {
-                e.preventDefault();
+                // e.preventDefault();
 
                 Graph.mousedown = true;
                 Canvas.update();
@@ -537,7 +585,7 @@
             }
         })
 
-        window.addEventListener("mouseup", e => {
+        Canvas.obj_layer.addEventListener("mouseup", e => {
             Graph.selected = null;
 
             Canvas.update();
@@ -589,13 +637,15 @@
 
         function new_object(color = 0){
             const new_div = document.getElementById('new-ref');
+
             const defs_div = document.getElementById('defs');
-            const div = document.createElement('div');
-            div.classList.add('def-div');
-            const div1 = document.createElement('div');
-            div1.classList.add('color-sel');
-            const div2 = document.createElement('div');
-            div2.classList.add('color-button');
+
+            const div = create_element('div', 'def-div');
+            
+            const div1 = create_element('div', 'color-sel');
+
+            const div2 = create_element('div', 'def-color-button');
+
             div1.appendChild(div2);
             div.appendChild(div1);
 
@@ -616,7 +666,13 @@
             number_area.classList.add('number-area')
             number_area.style.display = 'none'
             div4.appendChild(number_area)
+
             div.appendChild(div4)
+            
+            const div5 = document.createElement('div');
+            div5.classList.add('def-close');
+            div5.innerHTML = `<span class="iconify" data-icon="ion:close" data-inline="false"></span>`
+            div.appendChild(div5)
 
             defs_div.insertBefore(div, new_div);
 
@@ -628,7 +684,6 @@
                 handlers: {
                     edit: function() {
                         let format = math_field.text();
-                        console.log(format)
                         if (!format) {
                             math_field.ast = undefined;
                             math_field.obj_origin = undefined;
@@ -681,6 +736,11 @@
 
             math_field.obj_num = number_area;
 
+            div5.onclick = () => {
+                Graph.fields = Graph.fields.filter(i => i != math_field)
+                div.remove()
+            }
+
             div2.onclick = (e) => {
                 config_selector.style.visibility = 'visible';
                 config_selector.style.left = e.pageX + 'px';
@@ -688,7 +748,7 @@
 
                 let input = document.getElementById('draggable');
                 input.disabled = false;
-                if (math_field.obj_origin) {
+                if (math_field.obj_origin || (math_field.ast && math_field.ast.kind != 'vector' && !is_ast_num_literal(math_field.ast))) {
                     math_field.obj_draggable = false;
                     input.disabled = true;
                 }
@@ -697,6 +757,21 @@
 
                 input.onchange = (e) => {
                     math_field.obj_draggable = input.checked;
+
+                    if (is_ast_num_literal(math_field.ast) && input.checked) {
+                        math_field.obj_draggable = true;
+                        math_field.obj_num.innerHTML = `<div class="def-slider"><span>-5</span><input type="range" max="5" min="-5" step="0.01" value="${math_field.ast.val}"><span>5</span></div>`
+
+                        let rg = math_field.obj_num.children[0];
+                        let slider = rg.childNodes[1];
+                        slider.oninput = (e) => {
+                            const latex = math_field.obj_name.length > 2 ? 
+                                `${parseFloat(slider.value)}`
+                                : `${math_field.obj_name}=${parseFloat(slider.value)}`
+
+                            math_field.latex(latex);
+                        }
+                    }
                 }
 
                 
@@ -712,13 +787,37 @@
                         c.classList.add('sel');
                     }
                 })
-                color_input.children[math_field.obj_color].classList.add('sel')
+                color_input.children[math_field.obj_color].classList.add('sel');
+
+                let range = document.getElementById('config-slider-limit');
+                if (math_field.obj_draggable && is_ast_num_literal(math_field.ast)) {
+                    /** @type HTMLElement */
+                    let rg = math_field.obj_num.children[0];
+                    range.style.display = 'block'
+                    console.log(rg, range.firstChild)
+                    range.firstChild.value = rg.firstChild.innerText
+                    range.lastChild.value = rg.lastChild.innerText
+
+                    range.firstChild.onchange = (e) => {
+                        let n = parseInt(range.firstChild.value)
+                        if (isNaN(n)) return;
+                        rg.firstChild.innerText = String(n)
+                        rg.childNodes[1].min = n
+                    }
+
+                    range.lastChild.onchange = (e) => {
+                        let n = parseInt(range.lastChild.value)
+                        if (isNaN(n)) return;
+                        rg.lastChild.innerText = String(n)
+                        rg.childNodes[1].max = n
+                    }
+                }
 
                 // input.onchange = (e) => {
                 //     math_field.obj_draggable = input.checked;
                 // }
             };
-
+            
             Graph.fields.push(math_field);
         }
 

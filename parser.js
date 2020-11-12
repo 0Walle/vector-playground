@@ -1,7 +1,7 @@
 "use strict"
 
 const op_regex = /^[+*-/^=]/;
-const func_regex = /^(\\sqrt|\\sin|\\cos|\\tan|\\arcsin|\\arccos|\\arctan)/;
+const func_regex = /^(\\sqrt|\\sin|\\cos|\\tan|\\arcsin|\\arccos|\\arctan|\\repr)/;
 const num_regex = /^(\d+)(\.\d+)?/;
 const id_regex = /^[a-zA-Z]'*/;
 
@@ -125,28 +125,12 @@ function parse_primary(source) {
         let other_lhs = parse_primary(source);
         let rhs = {kind: 'op', op: tk.val, lhs: other_lhs}
         lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
-    } else {
-        while (tk && tk.kind == 'paren' && tk.val == '(') {
-            let rhs = parse_paren(source)
-            lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
+    } else while (tk && tk.kind == 'paren' && tk.val == '(') {
+        let rhs = parse_paren(source)
+        lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
 
-            tk = peek_token(source);
-        }
+        tk = peek_token(source);
     }
-    
-    // if (tk.kind == 'paren' && tk.val == '(') {
-    //     let rhs = parse_paren(source)
-    //     lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
-    //     do {
-    //         tk = peek_token(source);
-    //         if (!tk) break;
-
-    //         if (tk.kind == 'paren' && tk.val == '(') {
-    //             let rhs = parse_paren(source)
-    //             lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
-    //         } else break;
-    //     } while(true)
-    // }
 
     return lhs;
 }
@@ -273,7 +257,29 @@ function get_val(env, id) {
 
     env[id].val = result;
     return result;
+}
 
+function get_repr(ast, env) {
+    if (!ast || ast.kind != 'id') return execute_ast(ast, env);
+    else {
+        let origin = get_origin(ast.val, env);
+        let val = get_val(env, ast.val);
+        if (val instanceof Vec) lhs = lhs.add(val);
+        else return undefined;
+    }
+}
+
+function get_origin(id, env) {
+    if (!(id in env)) return new Vec(0, 0);
+    if (env[id].val_origin) return env[id].val_origin;
+    if (!env[id].origin) return new Vec(0, 0);
+
+    let origin = get_repr(env[id].origin, env);
+
+    let value = execute_ast(env[id].func, env);
+
+    env[id].origin_val = result;
+    return result;
 }
 
 function execute_ast(ast, env) {
@@ -356,6 +362,16 @@ function execute_ast(ast, env) {
                 if (lhs == undefined || rhs == undefined) return undefined;
                 if (!(lhs instanceof Num && rhs instanceof Num)) return undefined;
                 return new Vec(lhs.n, rhs.n);
+            case 'repr':
+                if (!ast.lhs || ast.lhs.kind != 'id') lhs = execute_ast(ast.lhs, env);
+                else {
+                    lhs = get_origin(ast.lhs.val, env);
+                    let val = execute_ast(ast.lhs, env);
+                    if (val instanceof Vec) lhs = lhs.add(val);
+                    else return undefined;
+                }
+                // if (!(lhs instanceof Num && rhs instanceof Num)) return undefined;
+                return lhs;
             case '=': break;
         }
     } else if (ast.kind == 'number') {
