@@ -10,8 +10,8 @@
     <script src="https://code.iconify.design/1/1.0.2/iconify.min.js"></script>
     <script src="jquery/jquery.min.js"></script>
     <script src="mathquill/mathquill-basic.js"></script>
-    <script src="defs.js"></script>
-    <script src="parser.js"></script>
+    <script src="js/defs.js"></script>
+    <script src="js/parser.js"></script>
     <style>
         body {
             margin: 0px;
@@ -690,14 +690,10 @@
                             Canvas.update();
                             return;
                         };
-                        let def
-                        try {
-                            def = parse_definition({source: format});
-                        } catch(e) {
-                            console.error(e)
-                            math_field.ast = undefined;
-                            math_field.obj_origin = undefined;
-                            Canvas.update();
+                        let def = parse_definition({source: format, lk: undefined});
+
+                        if (typeof def == 'string') {
+                            console.error(def)
                             return;
                         }
 

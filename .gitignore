@@ -1,1 +1,3 @@
 /node_modules
+/js/*.tsbuildinfo
+/js/*.js.map

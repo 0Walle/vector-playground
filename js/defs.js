@@ -1,3 +1,4 @@
+"use strict";
 // const step = 80;
 const colors = [
     "#dc322f",
