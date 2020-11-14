@@ -17,3 +17,6 @@ The absolute operator `|v|` returns the magnitude of a vector or absolute of a n
 ### Trigonometric functions
 
 Avaible trigonometric functions are `sin`, `cos`, `tan`, `arcsin`, `arccos`, `arctan`.
+
+### Demo
+To test the vector playground, go to https://0walle.github.io/vector-playground/
