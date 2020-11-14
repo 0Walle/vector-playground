@@ -28,28 +28,28 @@ function peek_token(source) {
     let match;
     let t = source.source.trim();
 
-    if (match = /,/.exec(t[0])) return {kind: 'comma'}
-    if (match = /[()]/.exec(t[0])) return {kind: 'paren', val: match[0]}
-    if (match = /\|/.exec(t[0])) return {kind: 'abs'}
-    
+    if (match = /,/.exec(t[0])) return { kind: 'comma' }
+    if (match = /[()]/.exec(t[0])) return { kind: 'paren', val: match[0] }
+    if (match = /\|/.exec(t[0])) return { kind: 'abs' }
+
     if (match = op_regex.exec(t)) {
-        return {kind: 'op', val: match[0]};
+        return { kind: 'op', val: match[0] };
     } else if (match = func_regex.exec(source.source)) {
-        return {kind: 'func', val: match[0].slice(1)};
+        return { kind: 'func', val: match[0].slice(1) };
     } else if (match = num_regex.exec(t)) {
-        return {kind: 'number', val: match[0]};
+        return { kind: 'number', val: match[0] };
     } else if (match = id_regex.exec(t)) {
-        return {kind: 'id', val: match[0]};
+        return { kind: 'id', val: match[0] };
     }
 }
 
 const operator = {
-    '=': {prec: 1, right: true},
-    '+': {prec: 2, right: false},
-    '-': {prec: 2, right: false},
-    '*': {prec: 3, right: false},
-    '/': {prec: 3, right: false},
-    '^': {prec: 4, right: false},
+    '=': { prec: 1, right: true },
+    '+': { prec: 2, right: false },
+    '-': { prec: 2, right: false },
+    '*': { prec: 3, right: false },
+    '/': { prec: 3, right: false },
+    '^': { prec: 4, right: false },
 }
 
 function parse_binary(source, lhs, min_prec) {
@@ -63,7 +63,7 @@ function parse_binary(source, lhs, min_prec) {
             rhs = parse_binary(source, rhs, operator[lk.val].prec)
             lk = peek_token(source);
         }
-        lhs = {kind: 'op', op: op, lhs: lhs, rhs: rhs};
+        lhs = { kind: 'op', op: op, lhs: lhs, rhs: rhs };
     }
     return lhs
 }
@@ -74,13 +74,13 @@ function parse_primary(source) {
     if (tk.kind == 'func') {
         source.source = next_token(source);
         let lhs = parse_primary(source);
-        return {kind: 'op', op: tk.val, lhs: lhs}
+        return { kind: 'op', op: tk.val, lhs: lhs }
     }
 
     if (tk.kind == 'op' && tk.val == '-') {
         source.source = next_token(source);
         let lhs = parse_primary(source);
-        return {kind: 'op', op: 'neg', lhs: lhs}
+        return { kind: 'op', op: 'neg', lhs: lhs }
     }
 
     if (tk.kind == 'paren' && tk.val == '(') {
@@ -90,7 +90,7 @@ function parse_primary(source) {
         if (tk.kind == 'comma') {
             source.source = next_token(source);
             let rhs = parse_binary(source, parse_primary(source), 0);
-            lhs = {kind: 'op', op: 'vector', lhs: lhs, rhs: rhs}
+            lhs = { kind: 'op', op: 'vector', lhs: lhs, rhs: rhs }
             tk = peek_token(source);
         }
         if (tk.kind == 'paren' && tk.val == ')') {
@@ -106,7 +106,7 @@ function parse_primary(source) {
         tk = peek_token(source);
         if (tk.kind == 'abs') {
             source.source = next_token(source);
-            return {kind: 'op', op: 'abs', lhs: lhs}
+            return { kind: 'op', op: 'abs', lhs: lhs }
         }
         throw "Nooo"
     }
@@ -123,11 +123,11 @@ function parse_primary(source) {
     if (tk.kind == 'func') {
         source.source = next_token(source);
         let other_lhs = parse_primary(source);
-        let rhs = {kind: 'op', op: tk.val, lhs: other_lhs}
-        lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
+        let rhs = { kind: 'op', op: tk.val, lhs: other_lhs }
+        lhs = { kind: 'op', op: '*', lhs: lhs, rhs: rhs }
     } else while (tk && tk.kind == 'paren' && tk.val == '(') {
         let rhs = parse_paren(source)
-        lhs = {kind: 'op', op: '*', lhs: lhs, rhs: rhs}
+        lhs = { kind: 'op', op: '*', lhs: lhs, rhs: rhs }
 
         tk = peek_token(source);
     }
@@ -142,7 +142,7 @@ function parse_paren(source) {
     if (tk.kind == 'comma') {
         source.source = next_token(source);
         let rhs = parse_binary(source, parse_primary(source), 0);
-        lhs = {kind: 'op', op: 'vector', lhs: lhs, rhs: rhs}
+        lhs = { kind: 'op', op: 'vector', lhs: lhs, rhs: rhs }
         tk = peek_token(source);
     }
     if (tk.kind == 'paren' && tk.val == ')') {
@@ -167,10 +167,14 @@ function parse_definition(source) {
         source.source = source.source.trim();
         origin = parse_expression(source);
     }
-    return {expr: expr, origin: origin};
+    return { expr: expr, origin: origin };
 }
 
 class Num {
+
+    n;
+    un;
+
     constructor(n, un = null) {
         this.n = n
         this.un = un
@@ -187,13 +191,13 @@ class Num {
     }
 
     mul(b) {
-        if (b instanceof Vec) 
+        if (b instanceof Vec)
             return new Vec(this.n * b.x, this.n * b.y);
         return new Num(this.n * b.n);
     }
 
     div(b) {
-        if (b instanceof Vec) 
+        if (b instanceof Vec)
             return undefined;
         return new Num(this.n / b.n);
     }
@@ -208,6 +212,9 @@ class Num {
 }
 
 class Vec {
+    x;
+    y;
+
     constructor(x, y) {
         this.x = x;
         this.y = y;
@@ -224,13 +231,13 @@ class Vec {
     }
 
     mul(b) {
-        if (b instanceof Num) 
+        if (b instanceof Num)
             return new Vec(this.x * b.n, this.y * b.n);
         return new Num(this.x * b.x + this.y * b.y);
     }
 
     div(b) {
-        if (b instanceof Num) 
+        if (b instanceof Num)
             return new Vec(this.x / b.n, this.y / b.n);
         return undefined;
     }
@@ -264,8 +271,9 @@ function get_repr(ast, env) {
     else {
         let origin = get_origin(ast.val, env);
         let val = get_val(env, ast.val);
-        if (val instanceof Vec) lhs = lhs.add(val);
-        else return undefined;
+        //if (val instanceof Vec) lhs = lhs.add(val);
+        //else return undefined;
+        return undefined;
     }
 }
 
@@ -278,8 +286,8 @@ function get_origin(id, env) {
 
     let value = execute_ast(env[id].func, env);
 
-    env[id].origin_val = result;
-    return result;
+    env[id].origin_val = value;
+    return value;
 }
 
 function execute_ast(ast, env) {
@@ -292,7 +300,7 @@ function execute_ast(ast, env) {
                 rhs = execute_ast(ast.rhs, env);
                 if (lhs == undefined || rhs == undefined) return undefined;
                 return lhs.add(rhs);
-            case '-': 
+            case '-':
                 lhs = execute_ast(ast.lhs, env);
                 rhs = execute_ast(ast.rhs, env);
                 if (lhs == undefined || rhs == undefined) return undefined;
@@ -308,7 +316,7 @@ function execute_ast(ast, env) {
                 if (lhs == undefined || rhs == undefined) return undefined;
                 if (!(lhs instanceof Num && rhs instanceof Num)) return undefined;
                 return new Num(lhs.n ** rhs.n);
-            case '/': 
+            case '/':
                 lhs = execute_ast(ast.lhs, env);
                 rhs = execute_ast(ast.rhs, env);
                 if (lhs == undefined || rhs == undefined) return undefined;
@@ -377,7 +385,7 @@ function execute_ast(ast, env) {
     } else if (ast.kind == 'number') {
         return new Num(parseFloat(ast.val));
     } else if (ast.kind == 'id') {
-        return get_val(env,ast.val);
+        return get_val(env, ast.val);
     }
 }
 
