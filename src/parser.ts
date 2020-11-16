@@ -242,6 +242,8 @@ function parse_definition(reader: Reader) {
     if (reader.source.startsWith('\\{from}')) {
         reader.source = reader.source.slice(7);
         origin = parse_expression(reader);
+    } else if (reader.source != '') {
+        return "Unexpected end of input"
     }
     if (typeof expr == 'string') return expr;
     if (typeof origin == 'string') return origin;

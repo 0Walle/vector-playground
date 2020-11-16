@@ -10,24 +10,24 @@ const colors = [
     '#268bd2',
     '#2aa198',
 ];
-function Vector(x, y) {
-    return {
-        kind: 'vector',
-        x1: 0,
-        y1: 0,
-        x2: x,
-        y2: y,
-        color: 0,
-    };
-}
-function Point(x, y) {
-    return {
-        kind: 'point',
-        x1: x,
-        y1: y,
-        color: 0,
-    };
-}
+// function Vector(x, y) {
+//     return {
+//         kind: 'vector',
+//         x1: 0,
+//         y1: 0,
+//         x2: x,
+//         y2: y,
+//         color: 0,
+//     }
+// }
+// function Point(x, y) {
+//     return {
+//         kind: 'point',
+//         x1: x,
+//         y1: y,
+//         color: 0,
+//     }
+// }
 function draw_arrow(ctx, x1, y1, _x2, _y2) {
     if (_x2 == 0 && _y2 == 0) {
         ctx.beginPath();

@@ -183,6 +183,9 @@ function parse_definition(reader) {
         reader.source = reader.source.slice(7);
         origin = parse_expression(reader);
     }
+    else if (reader.source != '') {
+        return "Unexpected end of input";
+    }
     if (typeof expr == 'string')
         return expr;
     if (typeof origin == 'string')
@@ -269,6 +272,7 @@ function get_val(id, env) {
     obj.val = result;
     return result;
 }
+// TODO fix these things
 // function get_repr(ast, env) {
 //     if (!ast || ast.kind != 'id') return execute_ast(ast, env);
 //     else {
@@ -394,6 +398,7 @@ function execute_ast(ast, env) {
                 if (!(lhs instanceof Num && rhs instanceof Num))
                     return undefined;
                 return new Vec(lhs.n, rhs.n);
+            // TODO fix this thing
             // case 'repr':
             //     if (!ast.lhs || ast.lhs.kind != 'id') lhs = execute_ast(ast.lhs, env);
             //     else {

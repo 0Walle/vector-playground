@@ -704,7 +704,7 @@
                             math_field.obj_draggable = false;
                         }
 
-                        if (ast.kind == 'op' && ast.op == '=') {
+                        if (ast.kind == TokenKind.Op && ast.op == '=') {
                             math_field.ast = ast.rhs;
                             math_field.obj_origin = origin;
                             math_field.obj_name = ast.lhs.val;
