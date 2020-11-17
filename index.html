@@ -258,6 +258,35 @@
             border-radius: 50%;
             content: "";
         }
+
+        .button-display-hidden {
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #93a1a1;
+        }
+
+        .button-display-point {
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #93a1a1;
+        }
+
+        .button-display-vector {
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #93a1a1;
+        }
+
+        .button-display-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-content: center;
+            text-align: center;
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -280,6 +309,14 @@
                 <input type="checkbox" id="draggable">
                 <span class="toogle-slider"></span>
             </label>
+        </div>
+        <div>
+            <label style="display: block;">Display</label>
+            <div class="button-display-container">
+                <div class="button-display-hidden" onclick="display_hidden()"></div>
+                <div class="button-display-point" onclick="display_point()"><span class="iconify" data-icon="radix-icons:dot-solid" data-inline="false"></span></div>
+                <div class="button-display-vector" onclick="display_vector()"><span class="iconify" data-icon="bi:arrow-up-right" data-inline="false"></span></div>
+            </div>
         </div>
         <div style="padding-top: 5px;">
             <label>Color</label>
@@ -304,6 +341,7 @@
         const MQ = MathQuill.getInterface(2);
 
         const config_selector = document.getElementById("config-selector");
+        let config_current = null;
 
         let Graph = {
             pan_x: 0,
@@ -455,7 +493,8 @@
                         field: field,
                         visible: true,
                         origin: field.obj_origin,
-                        val_origin: undefined
+                        val_origin: undefined,
+                        display: field.obj_display
                     }
                 }
 
@@ -466,7 +505,8 @@
                         field: Graph.selected.field,
                         visible: true,
                         origin: Graph.selected.origin,
-                        val_origin: undefined
+                        val_origin: undefined,
+                        display: Graph.selected.field.obj_display
                     }
                 }
 
@@ -520,12 +560,22 @@
                             oy += origin.y * Graph.step
                         }
 
-                        draw_arrow(this.obj_ctx,
-                            ox,
-                            oy,
-                            result.x * Graph.step,
-                            result.y * Graph.step,
-                        );
+                        if (obj.display == 'point') {
+                            this.obj_ctx.beginPath();
+                            this.obj_ctx.arc(
+                                result.x * Graph.step + Graph.pan_x,
+                                result.y * Graph.step + Graph.pan_y,
+                                6, 0, 2 * Math.PI);
+                            this.obj_ctx.fill();
+                        } else if (obj.display == 'vector') {
+                            draw_arrow(this.obj_ctx,
+                                ox,
+                                oy,
+                                result.x * Graph.step,
+                                result.y * Graph.step,
+                            );
+                        }
+
                     } else if (result instanceof Num) {
                         obj.field.obj_num.style.display = 'inline-block'
 
@@ -573,6 +623,7 @@
         window.addEventListener("mousedown", e => {
             if (e.target != config_selector && !config_selector.contains(e.target)) {
                 config_selector.style.visibility = 'hidden';
+                config_current = null;
             }
             
 
@@ -718,7 +769,7 @@
                     }
                 },
                 autoCommands: 'pi theta sqrt',
-                autoOperatorNames: 'sin cos tan arcsin arccos arctan from',
+                autoOperatorNames: 'sin cos tan arcsin arccos arctan from sign max min mod floor ceil round',
                 spaceBehavesLikeTab: true
             });
 
@@ -729,6 +780,7 @@
             math_field.obj_origin = undefined;
             math_field.obj_color = color;
             math_field.obj_draggable = false;
+            math_field.obj_display = 'vector';
 
             math_field.obj_num = number_area;
 
@@ -738,23 +790,26 @@
             }
 
             div2.onclick = (e) => {
+                config_current = math_field;
+
                 config_selector.style.visibility = 'visible';
                 config_selector.style.left = e.pageX + 'px';
                 config_selector.style.top = e.pageY + 'px';
 
                 let input = document.getElementById('draggable');
                 input.disabled = false;
-                if (math_field.obj_origin || (math_field.ast && math_field.ast.kind != 'vector' && !is_ast_num_literal(math_field.ast))) {
-                    math_field.obj_draggable = false;
-                    input.disabled = true;
-                }
+                // if (math_field.obj_origin || (math_field.ast && math_field.ast.op != 'vector' && !is_ast_num_literal(math_field.ast))) {
+                //     math_field.obj_draggable = false;
+                //     input.disabled = true;
+                // }
 
                 input.checked = math_field.obj_draggable;
 
                 input.onchange = (e) => {
                     math_field.obj_draggable = input.checked;
 
-                    if (is_ast_num_literal(math_field.ast) && input.checked) {
+                    // if (is_ast_num_literal(math_field.ast) && input.checked) {
+                    if (input.checked) {
                         math_field.obj_draggable = true;
                         math_field.obj_num.innerHTML = `<div class="def-slider"><span>-5</span><input type="range" max="5" min="-5" step="0.01" value="${math_field.ast.val}"><span>5</span></div>`
 
@@ -815,6 +870,19 @@
             };
             
             Graph.fields.push(math_field);
+        }
+
+        function display_hidden() {
+            config_current.obj_display = 'hidden';
+            Canvas.update();
+        }
+        function display_point() {
+            config_current.obj_display = 'point';
+            Canvas.update();
+        }
+        function display_vector() {
+            config_current.obj_display = 'vector';
+            Canvas.update();
         }
 
         Canvas.update();

@@ -12,13 +12,13 @@ var TokenKind;
 const comma_regex = /^,/;
 const parens_regex = /^[()]/;
 const pipe_regex = /^\|/;
-const op_regex = /^[+*-/^=]/;
-const func_regex = /^(\\sqrt|\\sin|\\cos|\\tan|\\arcsin|\\arccos|\\arctan|\\repr)/;
+const op_regex = /^[+*-/^=]|^\\max|^\\min/;
+const func_regex = /^(\\sqrt|\\sin|\\cos|\\tan|\\arcsin|\\arccos|\\arctan|\\repr|\\{sign}|\\{mod}|\\{ceil}|\\{floor}|\\{round})/;
 const num_regex = /^(\d+)(\.\d+)?/;
 const id_regex = /^[a-zA-Z]'*/;
 function consume_token(reader) {
     if (reader.lk == undefined)
-        throw 'No token to consume';
+        return;
     reader.source = reader.source
         .slice(reader.lk.advance)
         .replace(/^\s+/, '');
@@ -55,6 +55,8 @@ const operator = {
     '*': { prec: 3, right: false },
     '/': { prec: 3, right: false },
     '^': { prec: 4, right: false },
+    '\\max': { prec: 5, right: false },
+    '\\min': { prec: 5, right: false },
 };
 function parse_binary(reader, lhs, min_prec) {
     let lk = peek_token(reader);
@@ -80,7 +82,7 @@ function parse_binary(reader, lhs, min_prec) {
 function parse_primary(reader) {
     let tk = peek_token(reader);
     if (!tk) {
-        return "Unexpected token or end of input";
+        return `Unexpected token or end of input parsing primary expression: "${reader.source}"`;
     }
     if (tk.kind == TokenKind.Func) {
         consume_token(reader);
@@ -115,7 +117,7 @@ function parse_primary(reader) {
         return "Expected `|`";
     }
     if (tk.kind != TokenKind.Number && tk.kind != TokenKind.Var) {
-        return "Invalid Expression";
+        return "Invalid Expression, expected number or var";
     }
     consume_token(reader);
     let lhs = tk.kind == TokenKind.Number ?
@@ -179,8 +181,8 @@ function parse_definition(reader) {
     let expr = parse_expression(reader);
     consume_token(reader);
     let origin = null;
-    if (reader.source.startsWith('\\{from}')) {
-        reader.source = reader.source.slice(7);
+    if (reader.source.startsWith('{from}')) {
+        reader.source = reader.source.slice(6);
         origin = parse_expression(reader);
     }
     else if (reader.source != '') {
@@ -256,6 +258,16 @@ class Vec {
         return new Vec(-this.x, -this.y);
     }
 }
+function mapf(obj, f, n) {
+    if (obj instanceof Vec)
+        return new Vec(f(obj.x, n.n), f(obj.y, n.n));
+    return new Num(f(obj.n, n.n));
+}
+function applyf(obj, f) {
+    if (obj instanceof Vec)
+        return new Vec(f(obj.x), f(obj.y));
+    return new Num(f(obj.n));
+}
 function get_val(id, env) {
     if (!(id in env))
         return undefined;
@@ -298,7 +310,8 @@ function execute_ast(ast, env) {
     if (ast.kind == TokenKind.Op) {
         let lhs;
         let rhs;
-        switch (ast.op) {
+        const op = ast.op[0] == '\\' ? ast.op.slice(1) : ast.op;
+        switch (op) {
             case '+':
                 lhs = execute_ast(ast.lhs, env);
                 rhs = execute_ast(ast.rhs, env);
@@ -390,6 +403,38 @@ function execute_ast(ast, env) {
                 if (!(lhs instanceof Num))
                     return undefined;
                 return new Num(Math.atan(lhs.n), 'rad');
+            case 'max':
+                lhs = execute_ast(ast.lhs, env);
+                rhs = execute_ast(ast.rhs, env);
+                if (lhs == undefined || !(rhs instanceof Num))
+                    return undefined;
+                return mapf(lhs, Math.max, rhs);
+            case 'min':
+                lhs = execute_ast(ast.lhs, env);
+                rhs = execute_ast(ast.rhs, env);
+                if (lhs == undefined || !(rhs instanceof Num))
+                    return undefined;
+                return mapf(lhs, Math.min, rhs);
+            case '{ceil}':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined)
+                    return undefined;
+                return applyf(lhs, Math.ceil);
+            case '{sign}':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined)
+                    return undefined;
+                return applyf(lhs, Math.sign);
+            case '{floor}':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined)
+                    return undefined;
+                return applyf(lhs, Math.floor);
+            case '{round}':
+                lhs = execute_ast(ast.lhs, env);
+                if (lhs == undefined)
+                    return undefined;
+                return applyf(lhs, Math.round);
             case 'vector':
                 lhs = execute_ast(ast.lhs, env);
                 rhs = execute_ast(ast.rhs, env);

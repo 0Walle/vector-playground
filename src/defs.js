@@ -66,8 +66,8 @@ function snap2(val1, val2) {
 }
 
 function is_ast_num_literal(ast) {
-    return ast.kind == 'number' 
-        || (ast.kind == 'op' && ast.op == 'neg' && ast.lhs.kind == 'number')
+    return ast.kind == TokenKind.Number
+        || (ast.kind == TokenKind.Op && ast.op == 'neg' && ast.lhs.kind == TokenKind.Number)
 }
 
 function create_element(tag, klass) {
