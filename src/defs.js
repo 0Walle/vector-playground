@@ -70,8 +70,9 @@ function is_ast_num_literal(ast) {
         || (ast.kind == TokenKind.Op && ast.op == 'neg' && ast.lhs.kind == TokenKind.Number)
 }
 
-function create_element(tag, klass) {
+function create_element(tag, klass, childs = []) {
     const el = document.createElement(tag);
     el.classList.add(klass);
+    childs.map(c => el.appendChild(c))
     return el;
 }

@@ -686,51 +686,36 @@
         // let p = Point(2, 1);
         // Graph.objects.push(p);
 
-        function new_object(color = 0){
+        function new_object(){
             const new_div = document.getElementById('new-ref');
 
             const defs_div = document.getElementById('defs');
 
-            const div = create_element('div', 'def-div');
             
-            const div1 = create_element('div', 'color-sel');
+            const color = Math.floor(Math.random() * colors.length);
+            const color_button = create_element('div', 'def-color-button');
+            color_button.style.background = colors[color];
 
-            const div2 = create_element('div', 'def-color-button');
-
-            div1.appendChild(div2);
-            div.appendChild(div1);
-
-
-            color = Math.floor(Math.random() * colors.length);
-
-            div2.style.background = colors[color];
-
-            const span = document.createElement('span');
-            span.classList.add('math-field');
-            
-            const div4 = document.createElement('div');
-            div4.classList.add('def-right');
-            
-            div4.appendChild(span)
-
-            const number_area = document.createElement('span');
-            number_area.classList.add('number-area')
+            const span = create_element('span', 'math-field');
+            const number_area = create_element('span', 'number-area');
             number_area.style.display = 'none'
-            div4.appendChild(number_area)
-
-            div.appendChild(div4)
             
-            const div5 = document.createElement('div');
-            div5.classList.add('def-close');
-            div5.innerHTML = `<span class="iconify" data-icon="ion:close" data-inline="false"></span>`
-            div.appendChild(div5)
-
-            defs_div.insertBefore(div, new_div);
-
-            // let v = Vector(0, 0);
-            // Graph.objects.push(v);
-            // v.color = color;
             
+            const def_close = create_element('div', 'def-close');
+            def_close.innerHTML = `<span class="iconify" data-icon="ion:close" data-inline="false"></span>`
+            def_close.onclick = () => {
+                Graph.fields = Graph.fields.filter(i => i != math_field)
+                div.remove()
+            }
+            
+            const def_config = create_element('div', 'color-sel', [color_button]);
+            const def_middle = create_element('div', 'def-right', [span, number_area]);
+
+
+            const def_div = create_element('div', 'def-div', [def_config, def_middle, def_close]);
+
+            defs_div.insertBefore(def_div, new_div);
+
             let math_field = MQ.MathField(span, {
                 handlers: {
                     edit: function() {
@@ -783,13 +768,9 @@
             math_field.obj_display = 'vector';
 
             math_field.obj_num = number_area;
+            math_field.obj_config = color_button;
 
-            div5.onclick = () => {
-                Graph.fields = Graph.fields.filter(i => i != math_field)
-                div.remove()
-            }
-
-            div2.onclick = (e) => {
+            color_button.onclick = (e) => {
                 config_current = math_field;
 
                 config_selector.style.visibility = 'visible';
@@ -809,40 +790,35 @@
                     math_field.obj_draggable = input.checked;
 
                     // if (is_ast_num_literal(math_field.ast) && input.checked) {
-                    if (input.checked) {
-                        math_field.obj_draggable = true;
-                        math_field.obj_num.innerHTML = `<div class="def-slider"><span>-5</span><input type="range" max="5" min="-5" step="0.01" value="${math_field.ast.val}"><span>5</span></div>`
+                    // if (input.checked) {
+                    //     math_field.obj_draggable = true;
+                    //     math_field.obj_num.innerHTML = `<div class="def-slider"><span>-5</span><input type="range" max="5" min="-5" step="0.01" value="${math_field.ast.val}"><span>5</span></div>`
 
-                        let rg = math_field.obj_num.children[0];
-                        let slider = rg.childNodes[1];
-                        slider.oninput = (e) => {
-                            const latex = math_field.obj_name.length > 2 ? 
-                                `${parseFloat(slider.value)}`
-                                : `${math_field.obj_name}=${parseFloat(slider.value)}`
+                    //     let rg = math_field.obj_num.children[0];
+                    //     let slider = rg.childNodes[1];
+                    //     slider.oninput = (e) => {
+                    //         const latex = math_field.obj_name.length > 2 ? 
+                    //             `${parseFloat(slider.value)}`
+                    //             : `${math_field.obj_name}=${parseFloat(slider.value)}`
 
-                            math_field.latex(latex);
-                        }
-                    }
+                    //         math_field.latex(latex);
+                    //     }
+                    // }
                 }
 
                 
                 let color_input = document.getElementById('color-pal');
-                [...color_input.children].map((c, i) => { c.classList.remove('sel');});
-
-                [...color_input.children].map((c, i) => {
-                    // c.classList.remove('sel');
-                    c.onclick = () => {
-                        div2.style.background = colors[i];
-                        color_input.children[math_field.obj_color].classList.remove('sel')
-                        math_field.obj_color = i
-                        c.classList.add('sel');
+                                
+                for (const child of color_input.children) {
+                    if (child.c_num == math_field.obj_color) {
+                        child.classList.add('sel');
+                    } else {
+                        child.classList.remove('sel');
                     }
-                })
-                color_input.children[math_field.obj_color].classList.add('sel');
+                }
 
-                let range = document.getElementById('config-slider-limit');
+                /*let range = document.getElementById('config-slider-limit');
                 if (math_field.obj_draggable && is_ast_num_literal(math_field.ast)) {
-                    /** @type HTMLElement */
                     let rg = math_field.obj_num.children[0];
                     range.style.display = 'block'
                     console.log(rg, range.firstChild)
@@ -862,15 +838,24 @@
                         rg.lastChild.innerText = String(n)
                         rg.childNodes[1].max = n
                     }
-                }
+                }*/
 
-                // input.onchange = (e) => {
-                //     math_field.obj_draggable = input.checked;
-                // }
             };
             
             Graph.fields.push(math_field);
         }
+
+        let color_input = document.getElementById('color-pal');
+        [...color_input.children].map((c, i) => {
+            c.c_num = i;
+
+            c.onclick = () => {
+                config_current.obj_config.style.background = colors[i];
+                color_input.children[config_current.obj_color].classList.remove('sel')
+                config_current.obj_color = i
+                c.classList.add('sel');
+            }
+        })
 
         function display_hidden() {
             config_current.obj_display = 'hidden';
